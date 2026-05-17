@@ -16,7 +16,12 @@ import {
   Cpu,
   Terminal,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Eye
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast, Toaster } from "sonner";
@@ -31,6 +36,13 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
 import { DocumentType, Tone, Length, GenRequest, GenResponse } from "./types";
 import axios from "axios";
 
@@ -46,6 +58,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<GenResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
 
   const handleGenerate = async () => {
     if (!repoUrl) {
@@ -101,45 +115,72 @@ export default function App() {
       <Toaster position="top-right" theme="dark" />
 
       {/* Sidebar: Navigation & Personality */}
-      <aside className="w-64 bg-brand-sidebar border-r border-brand-border flex flex-col shrink-0">
-        <div className="p-8">
-          <div className="text-3xl font-serif italic text-white tracking-tighter mb-1">VOID.</div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-brand-accent font-bold opacity-80">Voice Of Intense Disdain</div>
-        </div>
-        
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          <div className="p-3 bg-white/5 rounded text-white flex items-center gap-3 border-l-2 border-brand-accent">
-            <span className="text-xs opacity-50 mono-text">01</span>
-            <span className="text-sm font-medium">New Disappointment</span>
-          </div>
-          <div className="p-3 hover:bg-white/5 rounded text-brand-muted flex items-center gap-3 transition-colors cursor-not-allowed group">
-            <span className="text-xs opacity-30 mono-text">02</span>
-            <span className="text-sm group-hover:text-brand-text/50">Buried Secrets</span>
-          </div>
-          <div className="p-3 hover:bg-white/5 rounded text-brand-muted flex items-center gap-3 transition-colors cursor-not-allowed group">
-            <span className="text-xs opacity-30 mono-text">03</span>
-            <span className="text-sm group-hover:text-brand-text/50">Empty Promises</span>
-          </div>
-        </nav>
+      <AnimatePresence initial={false}>
+        {isLeftSidebarOpen && (
+          <motion.aside 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 256, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            className="bg-brand-sidebar border-r border-brand-border flex flex-col shrink-0 overflow-hidden"
+          >
+            <div className="p-8 w-64">
+              <div className="text-3xl font-serif italic text-white tracking-tighter mb-1">VOID.</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-brand-accent font-bold opacity-80">Voice Of Intense Disdain</div>
+            </div>
+            
+            <nav className="flex-1 px-4 space-y-2 mt-4 w-64">
+              <div className="p-3 bg-white/5 rounded text-white flex items-center gap-3 border-l-2 border-brand-accent">
+                <span className="text-xs opacity-50 mono-text">01</span>
+                <span className="text-sm font-medium">New Disappointment</span>
+              </div>
+              <div className="p-3 hover:bg-white/5 rounded text-brand-muted flex items-center gap-3 transition-colors cursor-not-allowed group">
+                <span className="text-xs opacity-30 mono-text">02</span>
+                <span className="text-sm group-hover:text-brand-text/50">Buried Secrets</span>
+              </div>
+              <div className="p-3 hover:bg-white/5 rounded text-brand-muted flex items-center gap-3 transition-colors cursor-not-allowed group">
+                <span className="text-xs opacity-30 mono-text">03</span>
+                <span className="text-sm group-hover:text-brand-text/50">Empty Promises</span>
+              </div>
+            </nav>
 
-        <div className="p-6 border-t border-brand-border">
-          <div className="bg-black/40 p-4 rounded-lg border border-brand-border">
-            <p className="text-[11px] leading-relaxed text-brand-muted italic font-serif">
-              "I'm currently calculating exactly how many lawyers will laugh at your Terms of Service."
-            </p>
-          </div>
-        </div>
-      </aside>
+            <div className="p-6 border-t border-brand-border w-64">
+              <div className="bg-black/40 p-4 rounded-lg border border-brand-border">
+                <p className="text-[11px] leading-relaxed text-brand-muted italic font-serif">
+                  "I'm currently calculating exactly how many lawyers will laugh at your Terms of Service."
+                </p>
+              </div>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col border-r border-brand-border h-full relative overflow-hidden bg-[#080808]">
         <header className="h-20 border-b border-brand-border flex items-center justify-between px-8 shrink-0">
-          <div>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+              className="text-brand-muted hover:text-brand-accent transition-colors"
+            >
+              {isLeftSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+            </Button>
             <h2 className="text-xs font-bold text-brand-muted uppercase tracking-widest">Active Session: {result ? "A Rare Success" : "Waiting for Mediocrity"}</h2>
           </div>
           <div className="flex items-center gap-4">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
             <span className="text-[10px] text-brand-muted mono-text uppercase tracking-tighter">Online (Regrettably)</span>
+            {!isRightSidebarOpen && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsRightSidebarOpen(true)}
+                className="text-brand-muted hover:text-brand-accent transition-colors ml-4"
+              >
+                <PanelRightOpen className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </header>
 
@@ -161,6 +202,28 @@ export default function App() {
                         <h3 className="serif-text text-2xl text-white italic">{result.docType}</h3>
                       </div>
                       <div className="flex gap-2">
+                        <Dialog>
+                          <DialogTrigger render={
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 border-brand-border hover:bg-brand-accent/10 border font-mono text-[10px]"
+                            />
+                          }>
+                            <Eye className="w-3 h-3 mr-2" />
+                            PREVIEW_RAW
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] bg-brand-bg border-brand-border text-brand-text">
+                            <DialogHeader>
+                              <DialogTitle className="serif-text text-xl italic text-brand-accent">Raw Markdown Stream</DialogTitle>
+                            </DialogHeader>
+                            <ScrollArea className="mt-4 h-[60vh] w-full rounded border border-brand-border/50 bg-black/40 p-6">
+                              <pre className="text-xs font-mono whitespace-pre-wrap break-words opacity-70">
+                                {result.markdown}
+                              </pre>
+                            </ScrollArea>
+                          </DialogContent>
+                        </Dialog>
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -230,119 +293,140 @@ export default function App() {
       </main>
 
       {/* Sidebar: Configuration */}
-      <aside className="w-80 bg-brand-config p-8 flex flex-col gap-8 shrink-0 overflow-y-auto border-l border-brand-border">
-        <div className="space-y-1">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-muted">Configuration Matrix</h3>
-          <p className="text-[10px] text-brand-muted/50 italic font-serif">Adjust the parameters of your failure.</p>
-        </div>
-
-        <div className="space-y-6">
-          {/* Repo Input */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Repository URL</label>
-            <div className="relative group">
-              <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 group-focus-within:opacity-100 transition-opacity" />
-              <Input 
-                placeholder="Target repository..."
-                className="pl-9 h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Doc Type */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Document Class</label>
-            <div className="relative group">
-              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
-              <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
-                <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-brand-config border-brand-border text-brand-text">
-                  {documentTypes.map(t => (
-                    <SelectItem key={t} value={t} className="text-xs font-mono">{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Tone */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Attitude Modulator</label>
-            <div className="relative group">
-              <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
-              <Select value={tone} onValueChange={(v) => setTone(v as Tone)}>
-                <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-brand-config border-brand-border text-brand-text">
-                  {tones.map(t => (
-                    <SelectItem key={t} value={t} className="text-xs font-mono">
-                      <span className="flex items-center gap-2">
-                        {t === Tone.DeadpoolCool && <Skull className="w-3 h-3 text-brand-accent" />}
-                        {t}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Length */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Verbosity Level</label>
-            <div className="relative group">
-              <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
-              <Select value={length} onValueChange={(v) => setLength(v as Length)}>
-                <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-brand-config border-brand-border text-brand-text">
-                  {lengths.map(l => (
-                    <SelectItem key={l} value={l} className="text-xs font-mono capitalize">{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-auto space-y-4">
-           {/* Diagnostics */}
-           <div className="pt-6 border-t border-brand-border">
-              <div className="text-[10px] uppercase font-bold text-brand-muted mb-3 flex items-center gap-2">
-                <ShieldAlert className="w-3 h-3" />
-                Diagnostics
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-brand-border/30">
-                  <span className="text-[10px] text-brand-muted mono-text">429</span>
-                  <span className="text-[9px] text-brand-accent font-medium uppercase tracking-tighter">Rate limited? Chill out.</span>
+      <AnimatePresence initial={false}>
+        {isRightSidebarOpen && (
+          <motion.aside 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 320, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            className="bg-brand-config flex flex-col shrink-0 overflow-hidden border-l border-brand-border"
+          >
+            <div className="p-8 w-80 space-y-8 flex-1 overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-muted">Configuration Matrix</h3>
+                  <p className="text-[10px] text-brand-muted/50 italic font-serif">Adjust the parameters of your failure.</p>
                 </div>
-                <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-brand-border/30">
-                  <span className="text-[10px] text-brand-muted mono-text">402</span>
-                  <span className="text-[9px] text-brand-accent font-medium uppercase tracking-tighter">Broke? Add credits.</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsRightSidebarOpen(false)}
+                  className="text-brand-muted hover:text-brand-accent transition-colors"
+                >
+                  <PanelRightClose className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Repo Input */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Repository URL</label>
+                  <div className="relative group">
+                    <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 group-focus-within:opacity-100 transition-opacity" />
+                    <Input 
+                      placeholder="Target repository..."
+                      className="pl-9 h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"
+                      value={repoUrl}
+                      onChange={(e) => setRepoUrl(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Doc Type */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Document Class</label>
+                  <div className="relative group">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
+                    <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
+                      <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-brand-config border-brand-border text-brand-text">
+                        {documentTypes.map(t => (
+                          <SelectItem key={t} value={t} className="text-xs font-mono">{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Tone */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Attitude Modulator</label>
+                  <div className="relative group">
+                    <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
+                    <Select value={tone} onValueChange={(v) => setTone(v as Tone)}>
+                      <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-brand-config border-brand-border text-brand-text">
+                        {tones.map(t => (
+                          <SelectItem key={t} value={t} className="text-xs font-mono">
+                            <span className="flex items-center gap-2">
+                              {t === Tone.DeadpoolCool && <Skull className="w-3 h-3 text-brand-accent" />}
+                              {t}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Length */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-1">Verbosity Level</label>
+                  <div className="relative group">
+                    <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
+                    <Select value={length} onValueChange={(v) => setLength(v as Length)}>
+                      <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-brand-config border-brand-border text-brand-text">
+                        {lengths.map(l => (
+                          <SelectItem key={l} value={l} className="text-xs font-mono capitalize">{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-           </div>
 
-           <div className="bg-brand-accent/5 border border-brand-accent/20 p-4 rounded-lg">
-              <p className="text-[10px] text-brand-accent/60 leading-relaxed italic font-serif">
-                "Warning: Every document generated by this machine contains trace amounts of my disappointment."
-              </p>
-           </div>
+              <div className="mt-auto space-y-4 pb-8">
+                {/* Diagnostics */}
+                <div className="pt-6 border-t border-brand-border">
+                    <div className="text-[10px] uppercase font-bold text-brand-muted mb-3 flex items-center gap-2">
+                      <ShieldAlert className="w-3 h-3" />
+                      Diagnostics
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-brand-border/30">
+                        <span className="text-[10px] text-brand-muted mono-text">429</span>
+                        <span className="text-[9px] text-brand-accent font-medium uppercase tracking-tighter">Rate limited? Chill out.</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-brand-border/30">
+                        <span className="text-[10px] text-brand-muted mono-text">402</span>
+                        <span className="text-[9px] text-brand-accent font-medium uppercase tracking-tighter">Broke? Add credits.</span>
+                      </div>
+                    </div>
+                </div>
 
-           <footer className="text-center">
-            <p className="text-[9px] mono-text opacity-20 uppercase tracking-[0.3em]">
-              2026 © C. Crossno
-            </p>
-          </footer>
-        </div>
-      </aside>
+                <div className="bg-brand-accent/5 border border-brand-accent/20 p-4 rounded-lg">
+                    <p className="text-[10px] text-brand-accent/60 leading-relaxed italic font-serif">
+                      "Warning: Every document generated by this machine contains trace amounts of my disappointment."
+                    </p>
+                </div>
+
+                <footer className="text-center">
+                  <p className="text-[9px] mono-text opacity-20 uppercase tracking-[0.3em]">
+                    2026 © C. Crossno
+                  </p>
+                </footer>
+              </div>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
