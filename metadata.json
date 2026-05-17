@@ -1,0 +1,8 @@
+{
+  "name": "VOID: Repository Documents",
+  "description": "A sophisticatedly disdainful documentation generator for GitHub repositories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
