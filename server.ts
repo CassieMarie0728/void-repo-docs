@@ -5,8 +5,28 @@ import axios from "axios";
 import { z } from "zod";
 import dotenv from "dotenv";
 import { DocumentType, Tone, Length } from "./src/types.ts";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
+
+let geminiClient: GoogleGenAI | null = null;
+function getGeminiClient() {
+  if (!geminiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined in environment variables. Set it in Settings > Secrets.");
+    }
+    geminiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return geminiClient;
+}
 
 const app = express();
 const PORT = 3000;
@@ -144,6 +164,253 @@ package.json: ${repoContext.packageJson}
       return res.status(400).json({ error: "Invalid input parameters" });
     }
     res.status(500).json({ error: error.message || "An unexpected error occurred" });
+  }
+});
+
+app.post("/api/refine", async (req, res) => {
+  try {
+    const { markdown, instruction, tone } = req.body;
+    if (!markdown) {
+      return res.status(400).json({ error: "Markdown content is required" });
+    }
+    if (!instruction) {
+      return res.status(400).json({ error: "Refinement instruction is required" });
+    }
+
+    const aiClient = getGeminiClient();
+
+    const systemInstruction = `You are Void's AI Refiner, an elite legal writer, technical writer, and markdown formatting advisor.
+Your job is to rewrite, refine, or edit the user's provided markdown according to their instructions.
+
+CRITICAL LAWS:
+1. Maintain the general context, document type, and legal integrity of the document.
+2. Return ONLY the refined raw markdown document itself.
+3. DO NOT wrap the markdown inside triple-backtick markdown blocks (\`\`\`markdown) since this goes directly into a markdown editor. Keep the output as pure, valid raw markdown text.
+4. Do NOT output introductory chatter, explanations, summaries ("Here is your refined document", "I have updated the clauses"), or conversational footnotes. Under no circumstances should you talk outside the document text itself.
+5. If the document has a disclaimer at the bottom, preserve it.
+`;
+
+    const userPrompt = `Input Markdown Content:
+${markdown}
+
+---
+Refinement Instruction:
+"${instruction}"
+
+${tone ? `Ensure you align with a tone value of: ${tone}.` : ""}
+`;
+
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: userPrompt,
+      config: {
+        systemInstruction,
+        temperature: 0.3,
+      }
+    });
+
+    const refinedText = response.text || "";
+    res.json({ markdown: refinedText });
+
+  } catch (error: any) {
+    console.error("Refining document with Gemini error:", error);
+    res.status(500).json({ error: error.message || "Refinement failed" });
+  }
+});
+
+function parseMarkdownToNotionBlocks(md: string): any[] {
+  const lines = md.split("\n");
+  const blocks: any[] = [];
+  let inCodeBlock = false;
+  let codeContent: string[] = [];
+  let codeLang = "plain text";
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimLine = line.trim();
+
+    // Code blocks
+    if (trimLine.startsWith("```")) {
+      if (inCodeBlock) {
+        // End of code block
+        blocks.push({
+          object: "block",
+          type: "code",
+          code: {
+            rich_text: [{ type: "text", text: { content: codeContent.join("\n") } }],
+            language: codeLang
+          }
+        });
+        inCodeBlock = false;
+        codeContent = [];
+      } else {
+        // Start of code block
+        inCodeBlock = true;
+        const langMatch = trimLine.slice(3).trim();
+        codeLang = langMatch || "plain text";
+        // Map common languages to Notion standard
+        const supportedLangs = ["javascript", "typescript", "python", "html", "css", "sql", "shell", "json", "markdown", "yaml"];
+        if (!supportedLangs.includes(codeLang.toLowerCase())) {
+          codeLang = "plain text";
+        }
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeContent.push(line);
+      continue;
+    }
+
+    // Empty lines
+    if (trimLine === "") {
+      continue;
+    }
+
+    // Heading 1
+    if (line.startsWith("# ")) {
+      blocks.push({
+        object: "block",
+        type: "heading_1",
+        heading_1: {
+          rich_text: [{ type: "text", text: { content: line.slice(2).trim() } }]
+        }
+      });
+      continue;
+    }
+
+    // Heading 2
+    if (line.startsWith("## ")) {
+      blocks.push({
+        object: "block",
+        type: "heading_2",
+        heading_2: {
+          rich_text: [{ type: "text", text: { content: line.slice(3).trim() } }]
+        }
+      });
+      continue;
+    }
+
+    // Heading 3
+    if (line.startsWith("### ")) {
+      blocks.push({
+        object: "block",
+        type: "heading_3",
+        heading_3: {
+          rich_text: [{ type: "text", text: { content: line.slice(4).trim() } }]
+        }
+      });
+      continue;
+    }
+
+    // Blockquote
+    if (line.startsWith(">")) {
+      blocks.push({
+        object: "block",
+        type: "quote",
+        quote: {
+          rich_text: [{ type: "text", text: { content: line.replace(/^>\s*/, "").trim() } }]
+        }
+      });
+      continue;
+    }
+
+    // Bulleted list item
+    if (trimLine.startsWith("- ") || trimLine.startsWith("* ") || trimLine.startsWith("+ ")) {
+      blocks.push({
+        object: "block",
+        type: "bulleted_list_item",
+        bulleted_list_item: {
+          rich_text: [{ type: "text", text: { content: trimLine.slice(2).trim() } }]
+        }
+      });
+      continue;
+    }
+
+    // Numbered list item
+    const numMatch = trimLine.match(/^(\d+)\.\s+(.*)/);
+    if (numMatch) {
+      blocks.push({
+        object: "block",
+        type: "numbered_list_item",
+        numbered_list_item: {
+          rich_text: [{ type: "text", text: { content: numMatch[2].trim() } }]
+        }
+      });
+      continue;
+    }
+
+    // Paragraph
+    blocks.push({
+      object: "block",
+      type: "paragraph",
+      paragraph: {
+        rich_text: [{ type: "text", text: { content: line.trim() } }]
+      }
+    });
+  }
+
+  if (inCodeBlock && codeContent.length > 0) {
+    blocks.push({
+      object: "block",
+      type: "code",
+      code: {
+        rich_text: [{ type: "text", text: { content: codeContent.join("\n") } }],
+        language: codeLang
+      }
+    });
+  }
+
+  return blocks.slice(0, 95);
+}
+
+app.post("/api/export-notion", async (req, res) => {
+  try {
+    const { token, parentPageId, title, markdown } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: "Notion Integration Token (API Key) is required." });
+    }
+    if (!parentPageId) {
+      return res.status(400).json({ error: "Target Notion Parent Page ID is required." });
+    }
+    if (!markdown) {
+      return res.status(400).json({ error: "No markdown content to export." });
+    }
+
+    const cleanedPageId = parentPageId.replace(/-/g, "").trim();
+
+    const blocks = parseMarkdownToNotionBlocks(markdown);
+
+    const body = {
+      parent: { page_id: cleanedPageId },
+      properties: {
+        title: [
+          {
+            text: { content: title || "Exported Document" }
+          }
+        ]
+      },
+      children: blocks
+    };
+
+    const response = await axios.post("https://api.notion.com/v1/pages", body, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28"
+      }
+    });
+
+    if (response.data && response.data.url) {
+      return res.json({ success: true, url: response.data.url });
+    } else {
+      return res.json({ success: true, url: `https://notion.so/${cleanedPageId}` });
+    }
+
+  } catch (error: any) {
+    console.error("Notion Export Endpoint Error:", error.response?.data || error);
+    const detail = error.response?.data?.message || error.message || "Export failed.";
+    return res.status(500).json({ error: `Notion API Refused Integration: ${detail}` });
   }
 });
 

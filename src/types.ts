@@ -7,7 +7,13 @@ export enum DocumentType {
   ContributingGuidelines = "Contributing Guidelines",
   AcceptableUsePolicy = "Acceptable Use Policy",
   License = "LICENSE",
-  Readme = "README"
+  Readme = "README",
+  Eula = "End User License Agreement (EULA)",
+  Dpa = "Data Processing Agreement (DPA)",
+  Nda = "Non-Disclosure Agreement (NDA)",
+  Sla = "Service Level Agreement (SLA)",
+  CookiePolicy = "Cookie Policy",
+  Disclaimer = "Disclaimer"
 }
 
 export enum Tone {
