@@ -694,7 +694,7 @@ ${htmlContent}
             </div>
           )}
 
-          <div className="flex-1 overflow-hidden flex flex-col relative h-full">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
             <AnimatePresence mode="wait">
               {!result ? (
                 <motion.div
@@ -719,9 +719,9 @@ ${htmlContent}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex-1 overflow-hidden flex flex-col h-full"
+                  className="flex-1 overflow-hidden flex flex-col min-h-0"
                 >
-                  <ScrollArea className="flex-1">
+                  <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                     <div className="p-8 space-y-12 pb-32">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-1">
@@ -808,7 +808,7 @@ ${htmlContent}
                         </CardContent>
                       </Card>
                     </div>
-                  </ScrollArea>
+                  </div>
                 </motion.div>
               ) : viewMode === 'edit' ? (
                 <motion.div
@@ -816,7 +816,7 @@ ${htmlContent}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex-1 flex flex-col h-full bg-[#0a0a0a] overflow-hidden"
+                  className="flex-1 flex flex-col min-h-0 bg-[#0a0a0a] overflow-hidden"
                 >
                   <div className="bg-[#0f0f0f] px-6 py-2 border-b border-brand-border/40 flex items-center justify-between shrink-0">
                     <span className="text-[9px] font-mono text-brand-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
@@ -839,10 +839,10 @@ ${htmlContent}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex-1 flex divide-x divide-brand-border/50 overflow-hidden h-full"
+                  className="flex-1 flex divide-x divide-brand-border/50 overflow-hidden min-h-0"
                 >
                   {/* Left Column: Editor */}
-                  <div className="flex-1 flex flex-col overflow-hidden h-full bg-[#090909]">
+                  <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-[#090909]">
                     <div className="bg-[#0e0e0e] px-6 py-2 border-b border-brand-border/40 flex items-center justify-between shrink-0">
                       <span className="text-[9px] font-mono text-brand-muted uppercase tracking-[0.2em]">Markdown Source</span>
                       <span className="text-[9px] font-mono text-brand-accent/50 uppercase">EDIT LIVE</span>
@@ -857,7 +857,7 @@ ${htmlContent}
                   </div>
 
                   {/* Right Column: Visualizer */}
-                  <div className="flex-1 flex flex-col overflow-hidden h-full bg-[#050505]">
+                  <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-[#050505]">
                     <div className="bg-[#0e0e0e] px-6 py-2 border-b border-brand-border/40 flex items-center justify-between shrink-0">
                       <span className="text-[9px] font-mono text-brand-muted uppercase tracking-[0.2em]">Pristine Visualizer</span>
                       <div className="flex items-center gap-4 text-[9px] font-mono text-brand-muted/60 uppercase">
@@ -865,13 +865,13 @@ ${htmlContent}
                         <span>chars: {displayedMarkdown.length}</span>
                       </div>
                     </div>
-                    <ScrollArea className="flex-1">
+                    <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                       <div className="p-8 pb-32">
                         <div className="markdown-body">
                           <ReactMarkdown>{displayedMarkdown}</ReactMarkdown>
                         </div>
                       </div>
-                    </ScrollArea>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -944,7 +944,7 @@ ${htmlContent}
             </div>
 
             {/* Scrollable contents container */}
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
               <div className="p-6 space-y-6">
                 {rightActiveTab === "config" ? (
                   <div className="space-y-6">
@@ -1194,7 +1194,7 @@ ${htmlContent}
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Pinned Diagnostics Area */}
             <div className="p-6 border-t border-brand-border bg-black/10 shrink-0 space-y-4">
