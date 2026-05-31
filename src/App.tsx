@@ -219,6 +219,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<"preview" | "edit" | "split">("preview");
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [confirmGenerate, setConfirmGenerate] = useState(false);
+  const [textWrap, setTextWrap] = useState<boolean>(true);
 
   // AI Refinement & Formatting states
   const [rightActiveTab, setRightActiveTab] = useState<"config" | "refine">("config");
@@ -828,9 +829,14 @@ ${htmlContent}
                   <textarea
                     value={editedMarkdown}
                     onChange={(e) => setEditedMarkdown(e.target.value)}
+                    wrap={textWrap ? "soft" : "off"}
                     className="flex-1 w-full p-8 bg-transparent text-brand-text font-mono text-[13px] leading-relaxed outline-none resize-none overflow-y-auto pb-28 border-0 focus:ring-0 placeholder:text-brand-muted/20"
                     placeholder="Enter your custom Markdown structures here..."
-                    style={{ fontFamily: '"Courier New", Courier, monospace' }}
+                    style={{ 
+                      fontFamily: '"Courier New", Courier, monospace',
+                      whiteSpace: textWrap ? 'pre-wrap' : 'pre',
+                      overflowX: textWrap ? 'hidden' : 'auto'
+                    }}
                   />
                 </motion.div>
               ) : (
@@ -850,9 +856,14 @@ ${htmlContent}
                     <textarea
                       value={editedMarkdown}
                       onChange={(e) => setEditedMarkdown(e.target.value)}
+                      wrap={textWrap ? "soft" : "off"}
                       className="flex-1 w-full p-6 bg-transparent text-brand-text font-mono text-[12px] leading-relaxed outline-none resize-none overflow-y-auto pb-28 placeholder:text-brand-muted/20 border-0 focus:ring-0"
                       placeholder="Start typing markdown here..."
-                      style={{ fontFamily: '"Courier New", Courier, monospace' }}
+                      style={{ 
+                        fontFamily: '"Courier New", Courier, monospace',
+                        whiteSpace: textWrap ? 'pre-wrap' : 'pre',
+                        overflowX: textWrap ? 'hidden' : 'auto'
+                      }}
                     />
                   </div>
 
@@ -1025,6 +1036,38 @@ ${htmlContent}
                         </Select>
                       </div>
                     </div>
+
+                    {/* Editor comfort toggles */}
+                    <div className="space-y-2 pt-4 border-t border-brand-border/20">
+                      <label className="text-[10px] uppercase font-mono tracking-widest text-[#981518] ml-0.5 font-bold">Editor Comfort</label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={textWrap ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setTextWrap(true)}
+                          className={`flex-1 text-[9px] font-mono h-7 uppercase tracking-wider ${
+                            textWrap 
+                              ? "bg-brand-accent text-white hover:bg-brand-accent/90 border-transparent" 
+                              : "border-brand-border/60 hover:bg-white/5 text-brand-muted"
+                          }`}
+                        >
+                          Soft Wrap
+                        </Button>
+                        <Button
+                          variant={!textWrap ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setTextWrap(false)}
+                          className={`flex-1 text-[9px] font-mono h-7 uppercase tracking-wider ${
+                            !textWrap 
+                              ? "bg-brand-accent text-white hover:bg-brand-accent/90 border-transparent" 
+                              : "border-brand-border/60 hover:bg-white/5 text-brand-muted"
+                          }`}
+                        >
+                          No Wrap
+                        </Button>
+                      </div>
+                    </div>
+
                   </div>
                 ) : (
                   <div className="space-y-6">
