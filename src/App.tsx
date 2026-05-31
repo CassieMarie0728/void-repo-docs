@@ -28,7 +28,9 @@ import {
   Undo2,
   SpellCheck,
   ChevronRight,
-  Settings
+  Settings,
+  ArrowLeftRight,
+  ShieldCheck
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast, Toaster } from "sonner";
@@ -53,6 +55,8 @@ import {
 import { DocumentType, Tone, Length, GenRequest, GenResponse } from "./types";
 import axios from "axios";
 import { NotionExportDialog } from "./components/NotionExportDialog";
+import { DiffViewer } from "./components/DiffViewer";
+import { ComplianceAudit } from "./components/ComplianceAudit";
 
 const documentTypes = [...Object.values(DocumentType)].sort((a, b) => a.localeCompare(b));
 const tones = Object.values(Tone);
@@ -216,13 +220,13 @@ export default function App() {
   // Live Editor & Auto-Save States
   const [editedMarkdown, setEditedMarkdown] = useState<string>("");
   const [originalMarkdown, setOriginalMarkdown] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"preview" | "edit" | "split">("preview");
+  const [viewMode, setViewMode] = useState<"preview" | "edit" | "split" | "diff">("preview");
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [confirmGenerate, setConfirmGenerate] = useState(false);
   const [textWrap, setTextWrap] = useState<boolean>(true);
 
   // AI Refinement & Formatting states
-  const [rightActiveTab, setRightActiveTab] = useState<"config" | "refine">("config");
+  const [rightActiveTab, setRightActiveTab] = useState<"config" | "refine" | "audit">("config");
   const [customInstruction, setCustomInstruction] = useState("");
   const [isRefining, setIsRefining] = useState(false);
   const [placeholderReplacements, setPlaceholderReplacements] = useState<Record<string, string>>({});
@@ -647,6 +651,15 @@ ${htmlContent}
                   <Columns className="w-3.5 h-3.5 mr-1.5" />
                   SPLIT SCREEN
                 </Button>
+                <Button 
+                  variant={viewMode === 'diff' ? 'default' : 'ghost'} 
+                  size="sm"
+                  className={`text-[10px] font-mono h-8 uppercase tracking-wider ${viewMode === 'diff' ? 'bg-brand-accent text-white hover:bg-brand-accent/90' : 'text-brand-muted hover:text-brand-accent hover:bg-white/5'}`}
+                  onClick={() => setViewMode('diff')}
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" />
+                  DIFF COMPARISON
+                </Button>
               </div>
 
               <div className="flex items-center gap-3">
@@ -839,7 +852,7 @@ ${htmlContent}
                     }}
                   />
                 </motion.div>
-              ) : (
+              ) : viewMode === 'split' ? (
                 <motion.div
                   key="split"
                   initial={{ opacity: 0 }}
@@ -885,6 +898,23 @@ ${htmlContent}
                     </div>
                   </div>
                 </motion.div>
+              ) : (
+                <motion.div
+                  key="diff"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex-1 flex flex-col overflow-hidden min-h-0"
+                >
+                  <DiffViewer
+                    original={originalMarkdown}
+                    current={editedMarkdown}
+                    onRevert={() => {
+                      setEditedMarkdown(originalMarkdown);
+                      toast.info("Reverted all custom edits back to original AI generation.");
+                    }}
+                  />
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -918,15 +948,15 @@ ${htmlContent}
           >
             {/* Header Tabs Block */}
             <div className="h-14 border-b border-brand-border flex items-center justify-between px-6 bg-black/40 shrink-0 select-none">
-              <div className="flex items-center gap-1.5 font-mono">
+              <div className="flex items-center gap-1 font-mono overflow-x-auto scrollbar-none max-w-[200px]">
                 <button
                   onClick={() => setRightActiveTab("config")}
-                  className={`text-[9.5px] font-bold uppercase tracking-widest flex items-center gap-1.5 py-4 border-b-2 transition-all ${rightActiveTab === "config" ? "text-brand-accent border-brand-accent font-black" : "text-brand-muted hover:text-white border-transparent"}`}
+                  className={`text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 py-4 border-b-2 transition-all shrink-0 ${rightActiveTab === "config" ? "text-brand-accent border-brand-accent font-black" : "text-brand-muted hover:text-white border-transparent"}`}
                 >
                   <Settings className="w-3 h-3" />
                   SETUP
                 </button>
-                <span className="text-brand-border/40 text-xs px-1">/</span>
+                <span className="text-brand-border/40 text-xs px-0.5 shrink-0">/</span>
                 <button
                   onClick={() => {
                     if (!result) {
@@ -935,12 +965,26 @@ ${htmlContent}
                     }
                     setRightActiveTab("refine");
                   }}
-                  className={`text-[9.5px] font-bold uppercase tracking-widest flex items-center gap-1.5 py-4 border-b-2 transition-all relative ${rightActiveTab === "refine" ? "text-brand-accent border-brand-accent font-black" : "text-brand-muted hover:text-white border-transparent"} ${!result ? "opacity-30 cursor-not-allowed" : ""}`}
+                  className={`text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 py-4 border-b-2 transition-all shrink-0 ${rightActiveTab === "refine" ? "text-brand-accent border-brand-accent font-black" : "text-brand-muted hover:text-white border-transparent"} ${!result ? "opacity-30 cursor-not-allowed" : ""}`}
                 >
-                  <Sparkles className="w-3 h-3" />
-                  AI REFINER
+                  <Sparkles className="w-3 h-3 text-brand-accent" />
+                  REFINER
+                </button>
+                <span className="text-brand-border/40 text-xs px-0.5 shrink-0">/</span>
+                <button
+                  onClick={() => {
+                    if (!result) {
+                      toast.info("Forge a document first to unlock Compliance Audit.");
+                      return;
+                    }
+                    setRightActiveTab("audit");
+                  }}
+                  className={`text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 py-4 border-b-2 transition-all relative shrink-0 ${rightActiveTab === "audit" ? "text-brand-accent border-brand-accent font-black" : "text-brand-muted hover:text-white border-transparent"} ${!result ? "opacity-30 cursor-not-allowed" : ""}`}
+                >
+                  <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                  AUDIT
                   {result && (
-                    <span className="absolute top-3 -right-2 w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
+                    <span className="absolute top-3 -right-1 w-1 h-1 rounded-full bg-brand-accent animate-pulse" />
                   )}
                 </button>
               </div>
@@ -1069,7 +1113,7 @@ ${htmlContent}
                     </div>
 
                   </div>
-                ) : (
+                ) : rightActiveTab === "refine" ? (
                   <div className="space-y-6">
                     <div className="space-y-1">
                       <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#981518]">AI SMART REFINER</h3>
@@ -1235,6 +1279,15 @@ ${htmlContent}
                       </div>
                     )}
                   </div>
+                ) : (
+                  <ComplianceAudit
+                    markdown={editedMarkdown}
+                    isRefining={isRefining}
+                    onAutoFix={(promptText) => {
+                      // Trigger AI Refiner securely with the specialized legal prompt
+                      handleRefine(promptText);
+                    }}
+                  />
                 )}
               </div>
             </div>
