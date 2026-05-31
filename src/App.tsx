@@ -57,6 +57,7 @@ import axios from "axios";
 import { NotionExportDialog } from "./components/NotionExportDialog";
 import { DiffViewer } from "./components/DiffViewer";
 import { ComplianceAudit } from "./components/ComplianceAudit";
+import { DocToneGlossary, DOCUMENT_DESCRIPTIONS, TONE_DESCRIPTIONS } from "./components/DocToneGlossary";
 
 const documentTypes = [...Object.values(DocumentType)].sort((a, b) => a.localeCompare(b));
 const tones = Object.values(Tone);
@@ -227,6 +228,7 @@ export default function App() {
 
   // AI Refinement & Formatting states
   const [rightActiveTab, setRightActiveTab] = useState<"config" | "refine" | "audit">("config");
+  const [showGlossary, setShowGlossary] = useState(false);
   const [customInstruction, setCustomInstruction] = useState("");
   const [isRefining, setIsRefining] = useState(false);
   const [placeholderReplacements, setPlaceholderReplacements] = useState<Record<string, string>>({});
@@ -1038,6 +1040,16 @@ ${htmlContent}
                           </SelectContent>
                         </Select>
                       </div>
+                      {DOCUMENT_DESCRIPTIONS[docType] && (
+                        <div className="mt-1.5 p-2.5 rounded bg-[#0d0d0d]/90 border border-brand-border/30 text-[9.5px] leading-relaxed select-none transition-all duration-300">
+                          <div className="flex justify-between items-center text-[8px] font-mono uppercase text-brand-accent/85 tracking-widest font-black mb-1">
+                            <span>{DOCUMENT_DESCRIPTIONS[docType].shortDesc}</span>
+                            <span className="text-[7.5px] text-brand-muted/40 font-bold px-1 rounded bg-black/40 border border-brand-border/20">{DOCUMENT_DESCRIPTIONS[docType].rating}</span>
+                          </div>
+                          <p className="font-serif italic text-brand-muted/80">{DOCUMENT_DESCRIPTIONS[docType].scope}</p>
+                          <p className="text-[8px] font-mono text-brand-muted/45 mt-1.5 uppercase tracking-wide">Target: <span className="text-white/60">{DOCUMENT_DESCRIPTIONS[docType].bestFor}</span></p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Tone */}
@@ -1061,6 +1073,18 @@ ${htmlContent}
                           </SelectContent>
                         </Select>
                       </div>
+                      {TONE_DESCRIPTIONS[tone] && (
+                        <div className="mt-1.5 p-2.5 rounded bg-[#0d0d0d]/90 border border-brand-border/30 text-[9.5px] leading-relaxed select-none transition-all duration-300">
+                          <div className="flex justify-between items-center text-[8px] font-mono uppercase text-brand-accent/85 tracking-widest font-black mb-1">
+                            <span>{TONE_DESCRIPTIONS[tone].vibe}</span>
+                            <span className="text-[9.5px]">{TONE_DESCRIPTIONS[tone].emoji}</span>
+                          </div>
+                          <p className="font-serif italic text-brand-muted/80">{TONE_DESCRIPTIONS[tone].description}</p>
+                          <div className="mt-1.5 bg-black/60 px-2 py-1.5 rounded text-[8.5px] font-mono leading-normal text-brand-muted/70 italic border border-white/5">
+                            &ldquo;{TONE_DESCRIPTIONS[tone].sample}&rdquo;
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Length */}
@@ -1110,6 +1134,44 @@ ${htmlContent}
                           No Wrap
                         </Button>
                       </div>
+                    </div>
+
+                    {/* Interactive searchable complete Reference Codex */}
+                    <div className="space-y-2 pt-4 border-t border-brand-border/20">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] uppercase font-mono tracking-widest text-[#981518] ml-0.5 font-bold flex items-center gap-1.5">
+                          <span>📚 Docs & Attitude Codex</span>
+                        </label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowGlossary(!showGlossary)}
+                          className="h-6 px-2 text-[8.5px] font-mono border border-brand-border hover:bg-white/5 uppercase rounded text-brand-muted hover:text-white"
+                        >
+                          {showGlossary ? "Hide Index" : "Show Index"}
+                        </Button>
+                      </div>
+                      
+                      {showGlossary ? (
+                        <div className="p-3 bg-black/50 border border-brand-border/40 rounded-lg space-y-2">
+                          <DocToneGlossary 
+                            currentDoc={docType}
+                            currentTone={tone}
+                            onSelectDoc={(d) => {
+                              setDocType(d);
+                              toast.success(`Configured template to: ${d}`);
+                            }}
+                            onSelectTone={(t) => {
+                              setTone(t);
+                              toast.success(`Adjusted attitude tone: ${t}`);
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-[9px] text-brand-muted/40 font-mono uppercase tracking-wider pl-0.5 select-none">
+                          Interactive index of all 15 template classes and 6 attitudes.
+                        </p>
+                      )}
                     </div>
 
                   </div>
