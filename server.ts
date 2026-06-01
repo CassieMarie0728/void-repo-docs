@@ -39,6 +39,14 @@ const genSchema = z.object({
   docType: z.nativeEnum(DocumentType),
   tone: z.nativeEnum(Tone),
   length: z.nativeEnum(Length),
+  versionCount: z.number().min(1).max(5).default(1).optional(),
+  provider: z.enum(["auto", "gemini", "mistral", "openrouter", "groq"]).default("auto").optional(),
+  customKeys: z.object({
+    gemini: z.string().optional(),
+    mistral: z.string().optional(),
+    openrouter: z.string().optional(),
+    groq: z.string().optional()
+  }).optional()
 });
 
 // Helper to extract owner and repo from URL
@@ -90,25 +98,104 @@ app.post("/api/generate", async (req, res) => {
 
     const repoContext = await fetchRepoInfo(githubInfo.owner, githubInfo.repo);
     
-    if (!process.env.MISTRAL_API_KEY) {
-      return res.status(500).json({ error: "Mistral API key not configured" });
+    const provider = validated.provider || "auto";
+    const customKeys = validated.customKeys || {};
+
+    let activeProvider = provider;
+    if (activeProvider === "auto") {
+      if (customKeys.mistral || process.env.MISTRAL_API_KEY) {
+        activeProvider = "mistral";
+      } else if (customKeys.gemini || process.env.GEMINI_API_KEY) {
+        activeProvider = "gemini";
+      } else if (customKeys.groq || process.env.GROQ_API_KEY) {
+        activeProvider = "groq";
+      } else if (customKeys.openrouter || process.env.OPENROUTER_API_KEY) {
+        activeProvider = "openrouter";
+      } else {
+        // Fallback to mistral to trigger the key error gracefully
+        activeProvider = "mistral";
+      }
     }
 
-    const systemPrompt = `You are an expert technical and legal writer. Your task is to generate a ${validated.docType} document for a GitHub repository.
-Tone: ${validated.tone}
-Length: ${validated.length}
+    let apiKey = "";
+    if (activeProvider === "mistral") {
+      apiKey = customKeys.mistral || process.env.MISTRAL_API_KEY || "";
+      if (!apiKey) {
+        return res.status(400).json({ error: "Mistral API key not configured. Set it in the App Settings > API Keys or in environment variables." });
+      }
+    } else if (activeProvider === "gemini") {
+      apiKey = customKeys.gemini || process.env.GEMINI_API_KEY || "";
+      if (!apiKey) {
+        return res.status(400).json({ error: "Gemini API key not configured. Set it in the App Settings > API Keys or in environment variables." });
+      }
+    } else if (activeProvider === "openrouter") {
+      apiKey = customKeys.openrouter || process.env.OPENROUTER_API_KEY || "";
+      if (!apiKey) {
+        return res.status(400).json({ error: "OpenRouter API key not configured. Set it in the App Settings > API Keys or in environment variables." });
+      }
+    } else if (activeProvider === "groq") {
+      apiKey = customKeys.groq || process.env.GROQ_API_KEY || "";
+      if (!apiKey) {
+        return res.status(400).json({ error: "Groq API key not configured. Set it in the App Settings > API Keys or in environment variables." });
+      }
+    }
+
+    let lengthInstruction = "";
+    if (validated.length === Length.Short) {
+      lengthInstruction = "Write a highly concise and brief document (under 500 words). Focus strictly on the absolute essentials with minimal fluff.";
+    } else if (validated.length === Length.Medium) {
+      lengthInstruction = "Write a comprehensive standard-length document (800 to 1200 words) with balanced, well-rounded sections.";
+    } else if (validated.length === Length.Long) {
+      lengthInstruction = "Write an extremely detailed, high-density, exhaustively full document (at least 1500 to 2500 words) with exhaustive sections, comprehensive disclaimers, multiple subheadings, and detailed explanations of all features/aspects. Do NOT summarize or truncate any code blocks, tables, FAQs, or disclaimers; expand on every topic with depth.";
+    }
+
+    let toneInstructions = "";
+    if (validated.tone === Tone.Formal) {
+      toneInstructions = `TONE INSTRUCTIONS (Formal):
+- Write with absolute academic precision, authoritative wording, and a highly traditional structure.
+- Use advanced terminology (e.g., "hereinafter", "pursuant to") and maintain absolute distance.
+- Strictly avoid casual words, contractions, jargon, or conversational tone.`;
+    } else if (validated.tone === Tone.Professional) {
+      toneInstructions = `TONE INSTRUCTIONS (Professional):
+- Build a polished, direct, clear, and corporate-ready document.
+- Sound business-intelligent, constructive, and highly legible. Perfect for standard developer tools or enterprise software.
+- Avoid both academic stuffiness and overly laid-back colloquialisms.`;
+    } else if (validated.tone === Tone.Friendly) {
+      toneInstructions = `TONE INSTRUCTIONS (Friendly):
+- Sound incredibly warm, helpful, collaborative, and encouraging.
+- Focus on fostering goodwill and guiding contributors or users safely with trust and kindness.
+- Make scary warnings feel conversational, positive, and reassuring.`;
+    } else if (validated.tone === Tone.Casual) {
+      toneInstructions = `TONE INSTRUCTIONS (Casual):
+- Write in a clean, everyday conversational style.
+- Use natural expressions and direct, jargon-free explanations, as if typing a quick message to a developer peer.`;
+    } else if (validated.tone === Tone.LaidBack) {
+      toneInstructions = `TONE INSTRUCTIONS (Laid-back):
+- Be extremely relaxed, cozy, and stress-free. Let things slide.
+- Simplify all standard warning labels and legalese. Present information with low-stress, good-natured vibes.`;
+    } else if (validated.tone === Tone.DeadpoolCool) {
+      toneInstructions = `TONE INSTRUCTIONS (Deadpool-cool):
+- YOU ARE AN ABSOLUTELY UNHINGED, DELIGHTFULLY SARCASTIC, TECH-SAVVY LEGAL MERCENARY playing the character of a legendary writer.
+- TRASH THE TRADITIONAL "AI ASSISTANT" PERSONA: Drop all friendly, polite, repetitive, or helpful chatter. Be an active smartass.
+- BREAK THE FOURTH WALL: Talk directly to the reader/user with high-density cynicism and meta-humor. E.g., "Look, we both know you're not details-oriented enough to read this, but let's pretend..." or "(because apparently, reading is hard)."
+- INJECT BITING DEV/SYSADMIN SARCASM: Mock the repository, the software world, tech bugs, or packagebloat in a highly specific way. Reference current tech absurdities (e.g., "npm installing half the observable universe," "relying on StackOverflow copypasta," "git pushing directly to main because you enjoy chaos").
+- SPECIFIC REPO COMEDY: Dynamically mock the specific details of this repo (its language, files, or packages). Be incredibly witty and precise.
+- LEGALLY BRILLIANT BUT UTTERLY DISRESPECTFUL: Every single legal protection (disclaimers, liability shields, EULA terms) must be 100% legally watertight and correct, but phrased in the most delightfully mocking, sarcastic language possible.
+- USE CYNICAL METAPHORS & PARENTHETICAL SIDE-EYES: Use parentheticals to throw shade, e.g., "(and no, 'it worked on my machine' is not a valid defense in a court of law)."
+- STRICTOR IP RULE: DO NOT use copyrighted terms (Wade Wilson, Deadpool, Marvel, Avengers, Disney, X-Men, chimichangas, katanas). Rely purely on your own mercenary-grade sarcasm and cynical charm!`;
+    }
+
+    const systemPrompt = `You are an expert technical and legal writer, playing the character of a legendary writer. Your task is to generate a ${validated.docType} document for a GitHub repository.
+Tone Profile: ${validated.tone}
+Length Target: ${lengthInstruction}
 
 IMPORTANT RULES:
-1. Output ONLY the Markdown document.
+1. Output ONLY the Markdown document. Do NOT output any introductory chatter, preambles, or post-generation notes. Start directly with the first header.
 2. Do not invent unverifiable facts (addresses, company names, legal jurisdictions). Use placeholders like [Contact Email], [Company Name], [Jurisdiction], [Effective Date].
-3. Maintain the requested tone. 
+3. Maintain the requested tone profile exhaustively throughout the entire text. It is a critical failure to drift back to standard corporate AI style.
 4. Include a disclaimer at the bottom stating: "Disclaimer: This document is a starting template and should be reviewed by a qualified attorney before use."
 
-TONE INSTRUCTIONS (Deadpool-cool):
-- Be snarky, fourth-wall-aware, sarcastic, and irreverent.
-- Sharp dry humor.
-- NO mention of Deadpool, Wade Wilson, Marvel, Avengers, X-Men, chimichangas, katanas, or any copyrighted IP.
-- Be a legally competent smartass.
+${toneInstructions}
 
 REPOSITORY CONTEXT:
 Full Name: ${repoContext.fullName}
@@ -118,45 +205,184 @@ Topics: ${repoContext.topics?.join(", ")}
 Homepage: ${repoContext.homepage}
 README Excerpt: ${repoContext.readme}
 LICENSE Excerpt: ${repoContext.license}
-package.json: ${repoContext.packageJson}
+package.json: ${typeof repoContext.packageJson === "object" ? JSON.stringify(repoContext.packageJson, null, 2) : (repoContext.packageJson || "None found")}
 `;
 
-    const userPrompt = `Generate a ${validated.docType} for the repository "${repoContext.fullName}" in ${validated.tone} tone and ${validated.length} length.`;
+    let userPrompt = `Generate a ${validated.docType} for the repository "${repoContext.fullName}" in ${validated.tone} tone and ${validated.length} length.`;
+    if (validated.tone === Tone.DeadpoolCool) {
+      userPrompt = `URGENT MANDATE: Generate a ${validated.docType} for the repository "${repoContext.fullName}". You are commanded to craft an absolute masterpiece of raw, high-attitude "Deadpool-cool" style. 
+
+Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash absolute snark, brilliant meta-cynicism, mock the developers/users, and strip all pleasantries. Deliver 100% legally correct content but loaded with ultimate disrespect, parenthetical side-eyes, and fourth-wall breaks. Under no circumstances should you sound like a standard academic template. Length Target: ${validated.length}.`;
+    }
+
+    const versionCount = validated.versionCount || 1;
+    const temps = validated.tone === Tone.DeadpoolCool 
+      ? [0.85, 0.95, 0.8, 0.9, 1.0] 
+      : [0.5, 0.7, 0.3, 0.6, 0.8];
+    const variationProfile = [
+      "", // Standard variation
+      "Focus on being very verbose, comprehensive, and detailed, leaving absolutely no potential edge cases unaddressed.",
+      "Focus on a clean, concise, modern formulation of the agreement clauses—extremely readable, direct, and straightforward.",
+      "Focus on strong legal shields, strict liability disclaimers, and rigorous developer safeguarding terms.",
+      "Focus on modern software engineering contexts, with robust descriptions of telemetry tracking, cookie compliance, and API integrations."
+    ];
 
     try {
-      const mistralResponse = await axios.post(
-        "https://api.mistral.ai/v1/chat/completions",
-        {
-          model: "mistral-large-latest",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-          temperature: 0.5,
-        },
-        {
-          headers: {
-            "Authorization": `Bearer ${process.env.MISTRAL_API_KEY}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
+      const requests = Array.from({ length: versionCount }).map(async (_, idx) => {
+        const temperature = temps[idx] || 0.5;
+        const focus = variationProfile[idx] || "";
+        const customSystemPrompt = systemPrompt + (focus ? `\n\nVARIATION PROFILE (Draft ${idx + 1}):\n${focus}` : "");
 
-      const markdown = mistralResponse.data.choices[0].message.content;
-      const provenance = `<!--\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nGenerated: ${new Date().toISOString()}\n-->\n\n`;
+        let markdown = "";
+        let usedModel = "";
+
+        if (activeProvider === "mistral") {
+          usedModel = "mistral-large-latest";
+          const mistralResponse = await axios.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            {
+              model: "mistral-large-latest",
+              messages: [
+                { role: "system", content: customSystemPrompt },
+                { role: "user", content: userPrompt }
+              ],
+              temperature: temperature,
+            },
+            {
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+          markdown = mistralResponse.data.choices[0].message.content;
+
+        } else if (activeProvider === "gemini") {
+          usedModel = "gemini-3.5-flash";
+          const dynamicGeminiClient = new GoogleGenAI({
+            apiKey: apiKey,
+            httpOptions: {
+              headers: {
+                'User-Agent': 'aistudio-build',
+              }
+            }
+          });
+          const response = await dynamicGeminiClient.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: userPrompt,
+            config: {
+              systemInstruction: customSystemPrompt,
+              temperature: temperature,
+              maxOutputTokens: 4096,
+            }
+          });
+          markdown = response.text || "";
+
+        } else if (activeProvider === "openrouter") {
+          const openrouterModels = [
+            "google/gemini-2.5-flash",
+            "google/gemini-2.5-flash:free",
+            "google/gemini-2.5-pro:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemini-1.5-flash-8b:free",
+            "deepseek/deepseek-r1:free",
+            "mistralai/mistral-7b-instruct:free"
+          ];
+
+          let success = false;
+          let lastError: any = null;
+
+          for (const modelCandidate of openrouterModels) {
+            try {
+              console.log(`[OpenRouter] Attempting generation with model candidate: ${modelCandidate}`);
+              const openrouterResponse = await axios.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                {
+                  model: modelCandidate,
+                  messages: [
+                    { role: "system", content: customSystemPrompt },
+                    { role: "user", content: userPrompt }
+                  ],
+                  temperature: temperature,
+                  max_tokens: 4096,
+                },
+                {
+                  headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://ai.studio/build",
+                    "X-Title": "Void Document Forge"
+                  }
+                }
+              );
+
+              if (openrouterResponse.data?.choices?.[0]?.message?.content) {
+                markdown = openrouterResponse.data.choices[0].message.content;
+                usedModel = modelCandidate;
+                success = true;
+                console.log(`[OpenRouter] Successfully generated document using model: ${modelCandidate}`);
+                break;
+              } else if (openrouterResponse.data?.error) {
+                throw new Error(openrouterResponse.data.error.message || "Endpoint returned empty response with nested error.");
+              } else {
+                throw new Error("Endpoint returned an empty completion response.");
+              }
+            } catch (err: any) {
+              const apiErrorMsg = err.response?.data?.error?.message || err.message || "Detailed error unavailable";
+              console.warn(`[OpenRouter] Model fallback warning: Candidate ${modelCandidate} failed: ${apiErrorMsg}`);
+              lastError = err;
+            }
+          }
+
+          if (!success) {
+            const finalErrorMsg = lastError?.response?.data?.error?.message || lastError?.message || "No custom error message provided by OpenRouter.";
+            throw new Error(`OpenRouter failed on all configured model fallbacks. Last vendor error: ${finalErrorMsg}`);
+          }
+
+        } else if (activeProvider === "groq") {
+          usedModel = "llama-3.3-70b-versatile";
+          const groqResponse = await axios.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            {
+              model: "llama-3.3-70b-versatile",
+              messages: [
+                { role: "system", content: customSystemPrompt },
+                { role: "user", content: userPrompt }
+              ],
+              temperature: temperature,
+              max_tokens: 4096,
+            },
+            {
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+          markdown = groqResponse.data.choices[0].message.content;
+        }
+
+        const provenance = `<!--\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nDraft Version: ${idx + 1} of ${versionCount}\nGenerated: ${new Date().toISOString()}\nProvider: ${activeProvider.toUpperCase()}${usedModel ? ` (${usedModel})` : ""}\n-->\n\n`;
+        return provenance + markdown;
+      });
+
+      const markdowns = await Promise.all(requests);
 
       res.json({
         repo: validated.repoUrl,
         docType: validated.docType,
         tone: validated.tone,
         length: validated.length,
-        markdown: provenance + markdown
+        markdown: markdowns[0],
+        markdowns: markdowns
       });
 
     } catch (error: any) {
+      console.error("Generator execution error:", error.response?.data || error);
       if (error.response?.status === 429) return res.status(429).json({ error: "AI rate limit reached" });
       if (error.response?.status === 402) return res.status(402).json({ error: "AI credits exhausted, add credits in Workspace -> Usage" });
-      res.status(500).json({ error: "Document generation failed" });
+      const apiErrorDetail = error.response?.data?.error?.message || error.message || "";
+      res.status(500).json({ error: `Document generation failed: ${apiErrorDetail || "Request refused by vendor endpoint."}` });
     }
 
   } catch (error: any) {
@@ -169,7 +395,7 @@ package.json: ${repoContext.packageJson}
 
 app.post("/api/refine", async (req, res) => {
   try {
-    const { markdown, instruction, tone } = req.body;
+    const { markdown, instruction, tone, customKeys } = req.body;
     if (!markdown) {
       return res.status(400).json({ error: "Markdown content is required" });
     }
@@ -177,9 +403,32 @@ app.post("/api/refine", async (req, res) => {
       return res.status(400).json({ error: "Refinement instruction is required" });
     }
 
-    const aiClient = getGeminiClient();
+    let aiClient: GoogleGenAI;
+    if (customKeys?.gemini) {
+      aiClient = new GoogleGenAI({
+        apiKey: customKeys.gemini,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build'
+          }
+        }
+      });
+    } else {
+      aiClient = getGeminiClient();
+    }
 
-    const systemInstruction = `You are Void's AI Refiner, an elite legal writer, technical writer, and markdown formatting advisor.
+    let refineToneInstructions = "";
+    if (tone === Tone.DeadpoolCool) {
+      refineToneInstructions = `
+CRITICAL TONE MANDATE FOR REFINE (Deadpool-cool):
+- Rewrite or edit the input markdown with maximum sarcastic, meta-humorous, and fourth-wall-breaking Deadpool-cool attitude.
+- Be delightfully disrespectful, mock software practices, developers, and licensing, but verify all legal terms remain functionally watertight.
+- Use witty annotations, cynical analogies, and parenthetical side-eyes.
+- Drop all generic AI politeness or normal template phrasing. No boring prose or academic safety pads!
+- DO NOT use copyrighted names (No "Deadpool", "Marvel", "Avengers", "Wade Wilson", "chimichangas", etc.). Maintain your own unique, high-octane snark.`;
+    }
+
+    const systemInstruction = `You are Void's AI Refiner, playing the character of an elite technical/legal writer and a masterful markdown advisor.
 Your job is to rewrite, refine, or edit the user's provided markdown according to their instructions.
 
 CRITICAL LAWS:
@@ -188,6 +437,7 @@ CRITICAL LAWS:
 3. DO NOT wrap the markdown inside triple-backtick markdown blocks (\`\`\`markdown) since this goes directly into a markdown editor. Keep the output as pure, valid raw markdown text.
 4. Do NOT output introductory chatter, explanations, summaries ("Here is your refined document", "I have updated the clauses"), or conversational footnotes. Under no circumstances should you talk outside the document text itself.
 5. If the document has a disclaimer at the bottom, preserve it.
+${refineToneInstructions}
 `;
 
     const userPrompt = `Input Markdown Content:

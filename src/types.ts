@@ -31,11 +31,23 @@ export enum Length {
   Long = "long"
 }
 
+export type ProviderType = "auto" | "gemini" | "mistral" | "openrouter" | "groq";
+
+export interface CustomApiKeys {
+  gemini?: string;
+  mistral?: string;
+  openrouter?: string;
+  groq?: string;
+}
+
 export interface GenRequest {
   repoUrl: string;
   docType: DocumentType;
   tone: Tone;
   length: Length;
+  versionCount?: number;
+  provider?: ProviderType;
+  customKeys?: CustomApiKeys;
 }
 
 export interface GenResponse {
@@ -44,4 +56,5 @@ export interface GenResponse {
   tone: string;
   length: string;
   markdown: string;
+  markdowns?: string[];
 }

@@ -22,6 +22,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Eye,
+  EyeOff,
   Columns,
   Sparkles,
   Wrench,
@@ -30,7 +31,8 @@ import {
   ChevronRight,
   Settings,
   ArrowLeftRight,
-  ShieldCheck
+  ShieldCheck,
+  Layers
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast, Toaster } from "sonner";
@@ -209,6 +211,46 @@ const cleanMarkdownSpacing = (text: string): string => {
 
 export default function App() {
   const [repoUrl, setRepoUrl] = useState("");
+  const [provider, setProvider] = useState<"auto" | "gemini" | "mistral" | "openrouter" | "groq">("auto");
+  const [customKeys, setCustomKeys] = useState<{
+    gemini: string;
+    mistral: string;
+    openrouter: string;
+    groq: string;
+  }>(() => {
+    try {
+      const stored = localStorage.getItem("void_custom_keys");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          gemini: parsed.gemini || "",
+          mistral: parsed.mistral || "",
+          openrouter: parsed.openrouter || "",
+          groq: parsed.groq || ""
+        };
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return { gemini: "", mistral: "", openrouter: "", groq: "" };
+  });
+  const [showSecretKeys, setShowSecretKeys] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    localStorage.setItem("void_custom_keys", JSON.stringify(customKeys));
+  }, [customKeys]);
+
+  useEffect(() => {
+    const savedProvider = localStorage.getItem("void_selected_provider");
+    if (savedProvider) {
+      setProvider(savedProvider as any);
+    }
+  }, []);
+
+  const handleProviderChange = (newProvider: any) => {
+    setProvider(newProvider);
+    localStorage.setItem("void_selected_provider", newProvider);
+  };
   const [docType, setDocType] = useState<DocumentType>(DocumentType.Readme);
   const [tone, setTone] = useState<Tone>(Tone.Professional);
   const [length, setLength] = useState<Length>(Length.Medium);
@@ -221,6 +263,10 @@ export default function App() {
   // Live Editor & Auto-Save States
   const [editedMarkdown, setEditedMarkdown] = useState<string>("");
   const [originalMarkdown, setOriginalMarkdown] = useState<string>("");
+  const [versionCount, setVersionCount] = useState<number>(1);
+  const [versions, setVersions] = useState<string[]>([]);
+  const [originalVersions, setOriginalVersions] = useState<string[]>([]);
+  const [activeVersionIndex, setActiveVersionIndex] = useState<number>(0);
   const [viewMode, setViewMode] = useState<"preview" | "edit" | "split" | "diff">("preview");
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [confirmGenerate, setConfirmGenerate] = useState(false);
@@ -246,10 +292,29 @@ export default function App() {
             docType: parsed.docType || DocumentType.Readme,
             tone: parsed.tone || Tone.Professional,
             length: parsed.length || Length.Medium,
-            markdown: parsed.markdown
+            markdown: parsed.markdown,
+            markdowns: parsed.markdowns
           });
-          setEditedMarkdown(parsed.markdown);
-          setOriginalMarkdown(parsed.originalMarkdown || parsed.markdown);
+          
+          if (parsed.markdowns && Array.isArray(parsed.markdowns)) {
+            setVersions(parsed.markdowns);
+            setOriginalVersions(parsed.originalVersions || parsed.markdowns);
+            const idx = parsed.activeVersionIndex || 0;
+            setActiveVersionIndex(idx);
+            setEditedMarkdown(parsed.markdowns[idx]);
+            setOriginalMarkdown((parsed.originalVersions || parsed.markdowns)[idx]);
+          } else {
+            setVersions([parsed.markdown]);
+            setOriginalVersions([parsed.originalMarkdown || parsed.markdown]);
+            setActiveVersionIndex(0);
+            setEditedMarkdown(parsed.markdown);
+            setOriginalMarkdown(parsed.originalMarkdown || parsed.markdown);
+          }
+
+          if (parsed.versionCount) {
+            setVersionCount(parsed.versionCount);
+          }
+
           if (parsed.repoUrl) setRepoUrl(parsed.repoUrl);
           if (parsed.docType) setDocType(parsed.docType);
           if (parsed.tone) setTone(parsed.tone);
@@ -262,6 +327,19 @@ export default function App() {
     }
   }, []);
 
+  // Synch active draft edited edits back to versions array
+  useEffect(() => {
+    if (editedMarkdown) {
+      setVersions(prev => {
+        if (!prev || prev.length === 0) return [editedMarkdown];
+        if (prev[activeVersionIndex] === editedMarkdown) return prev;
+        const copy = [...prev];
+        copy[activeVersionIndex] = editedMarkdown;
+        return copy;
+      });
+    }
+  }, [editedMarkdown, activeVersionIndex]);
+
   // Debounced Auto-Save Mechanism
   useEffect(() => {
     if (!result || !editedMarkdown) return;
@@ -272,7 +350,12 @@ export default function App() {
     if (savedDraft) {
       try {
         const parsed = JSON.parse(savedDraft);
-        if (parsed && parsed.markdown === editedMarkdown) {
+        if (
+          parsed && 
+          parsed.markdown === editedMarkdown &&
+          parsed.activeVersionIndex === activeVersionIndex &&
+          JSON.stringify(parsed.markdowns) === JSON.stringify(versions)
+        ) {
           needsSave = false;
         }
       } catch (e) {}
@@ -291,7 +374,11 @@ export default function App() {
         docType: result.docType,
         repoUrl,
         tone,
-        length
+        length,
+        versionCount,
+        markdowns: versions,
+        originalVersions: originalVersions,
+        activeVersionIndex: activeVersionIndex
       }));
       setAutoSaveStatus("saved");
 
@@ -302,7 +389,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [editedMarkdown, originalMarkdown, result, repoUrl, tone, length]);
+  }, [editedMarkdown, originalMarkdown, result, repoUrl, tone, length, versionCount, versions, originalVersions, activeVersionIndex]);
 
   const pushHistory = (text: string) => {
     setHistory(prev => [...prev.slice(-9), text]); // Limit to last 10 states
@@ -339,6 +426,7 @@ export default function App() {
         markdown: editedMarkdown,
         instruction: finalInstruction,
         tone: tone,
+        customKeys,
       });
 
       if (response.data && response.data.markdown) {
@@ -407,29 +495,60 @@ export default function App() {
         docType,
         tone,
         length,
+        versionCount,
+        provider,
+        customKeys,
       } as GenRequest);
       
+      const resultsArray = response.data.markdowns && Array.isArray(response.data.markdowns)
+        ? response.data.markdowns
+        : [response.data.markdown];
+
       setResult(response.data);
-      setEditedMarkdown(response.data.markdown);
-      setOriginalMarkdown(response.data.markdown);
+      setVersions(resultsArray);
+      setOriginalVersions(resultsArray);
+      setActiveVersionIndex(0);
+      setEditedMarkdown(resultsArray[0]);
+      setOriginalMarkdown(resultsArray[0]);
 
       // Save new version to local storage instantly
       localStorage.setItem("void_editor_draft", JSON.stringify({
-        markdown: response.data.markdown,
-        originalMarkdown: response.data.markdown,
+        markdown: resultsArray[0],
+        originalMarkdown: resultsArray[0],
         docType: response.data.docType,
         repoUrl,
         tone,
-        length
+        length,
+        versionCount,
+        markdowns: resultsArray,
+        originalVersions: resultsArray,
+        activeVersionIndex: 0
       }));
       setAutoSaveStatus("saved");
-      toast.success("I've finished your little document. Try not to break it.");
+      toast.success(versionCount > 1 
+        ? `Successfully forged ${versionCount} diverse document drafts!` 
+        : "I've finished your little document. Try not to break it."
+      );
     } catch (error: any) {
       const message = error.response?.data?.error || "Even I couldn't summarize that mess.";
       toast.error(message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSwitchDraft = (newIndex: number) => {
+    if (newIndex === activeVersionIndex) return;
+
+    // Switch states
+    setEditedMarkdown(versions[newIndex]);
+    setOriginalMarkdown(originalVersions[newIndex]);
+    setActiveVersionIndex(newIndex);
+
+    // Reset local view history states for clean transition
+    setHistory([]);
+
+    toast.info(`Switched interface to Draft ${newIndex + 1}`);
   };
 
   const handleCopy = () => {
@@ -700,12 +819,52 @@ ${htmlContent}
                     setResult(null);
                     setEditedMarkdown("");
                     setOriginalMarkdown("");
-                    toast.info("Active draft discarded.");
+                    setVersions([]);
+                    setOriginalVersions([]);
+                    setActiveVersionIndex(0);
+                    toast.info("Active drafts discarded.");
                   }}
                   className="h-7 px-2 text-[9px] font-mono text-brand-muted hover:text-white hover:bg-white/5 rounded uppercase"
                 >
                   DISCARD
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Draft Variation Selector Tab Strip */}
+          {result && versions && versions.length > 1 && (
+            <div className="h-11 border-b border-brand-border/40 bg-black/20 flex items-center justify-between px-8 shrink-0 select-none">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-brand-muted/70 flex items-center gap-1.5 shrink-0 select-none">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-accent animate-pulse" />
+                  Variations:
+                </span>
+                <div className="flex items-center gap-1.5 py-1">
+                  {versions.map((_, idx) => {
+                    const isSelected = activeVersionIndex === idx;
+                    const isEdited = versions[idx] !== originalVersions[idx];
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleSwitchDraft(idx)}
+                        className={`h-7 px-3 text-[9.5px] uppercase font-mono tracking-wider rounded border transition-all flex items-center gap-1.5 shrink-0 ${
+                          isSelected
+                            ? "bg-brand-accent/10 border-brand-accent text-white font-bold select-none"
+                            : "bg-transparent border-brand-border/30 text-brand-muted hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <span>Draft {idx + 1}</span>
+                        {isEdited && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Has unsaved edits" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="text-[8.5px] font-mono text-brand-muted/50 uppercase select-none hidden sm:block">
+                Currently Viewing: <span className="text-white font-bold">Draft {activeVersionIndex + 1}</span> ({versions[activeVersionIndex]?.split(/\s+/).filter(Boolean).length || 0} words)
               </div>
             </div>
           )}
@@ -1093,15 +1252,205 @@ ${htmlContent}
                       <div className="relative group">
                         <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
                         <Select value={length} onValueChange={(v) => setLength(v as Length)}>
+                           <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent className="bg-brand-config border-brand-border text-brand-text">
+                             {lengths.map(l => (
+                               <SelectItem key={l} value={l} className="text-xs font-mono capitalize">{l}</SelectItem>
+                             ))}
+                           </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Generations Count */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5 flex items-center justify-between">
+                        <span>Draft Generations</span>
+                        <span className="text-[8px] text-brand-accent px-1.5 py-0.5 rounded bg-brand-accent/5 border border-brand-accent/20 font-bold uppercase tracking-wider">Multi-Draft</span>
+                      </label>
+                      <div className="relative group">
+                        <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
+                        <Select value={String(versionCount)} onValueChange={(v) => {
+                          const count = Number(v);
+                          setVersionCount(count);
+                        }}>
                           <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-brand-config border-brand-border text-brand-text">
-                            {lengths.map(l => (
-                              <SelectItem key={l} value={l} className="text-xs font-mono capitalize">{l}</SelectItem>
+                          <SelectContent className="bg-brand-config border-brand-border text-brand-text font-mono">
+                            {[1, 2, 3, 4, 5].map(n => (
+                              <SelectItem key={n} value={String(n)} className="text-xs">
+                                {n} {n === 1 ? "Version (Standard)" : "Versions (Parallel)"}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                      <p className="text-[8px] font-mono text-brand-muted/40 uppercase tracking-wider leading-relaxed">
+                        Forges up to five diverse variations simultaneously using creative variation profiles.
+                      </p>
+                    </div>
+
+                    {/* LLM Cognitive Engine & Key Vault */}
+                    <div className="space-y-4 pt-4 border-t border-brand-border/20">
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5 flex items-center justify-between">
+                          <span>Cognitive Engine</span>
+                          <span className="text-[8px] text-brand-accent px-1.5 py-0.5 rounded bg-brand-accent/5 border border-brand-accent/20 font-bold uppercase tracking-wider select-none">
+                            {provider === "auto" ? "AUTO" : provider.toUpperCase()}
+                          </span>
+                        </label>
+                        <div className="relative group">
+                          <Cpu className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 z-10" />
+                          <Select value={provider} onValueChange={handleProviderChange}>
+                            <SelectTrigger className="pl-9 h-10 bg-black/60 border-brand-border text-xs rounded">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-brand-config border-brand-border text-brand-text font-mono">
+                              <SelectItem value="auto" className="text-xs">Auto-Pilot (Dynamic Fallback)</SelectItem>
+                              <SelectItem value="gemini" className="text-xs">Google Gemini (gemini-3.5-flash)</SelectItem>
+                              <SelectItem value="mistral" className="text-xs">Mistral AI (mistral-large)</SelectItem>
+                              <SelectItem value="openrouter" className="text-xs">OpenRouter (gemini-2.5-flash)</SelectItem>
+                              <SelectItem value="groq" className="text-xs">Groq (llama-3.3-70b-versatile)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-[8px] font-mono text-brand-muted/40 uppercase tracking-wider leading-relaxed">
+                          Select the backend intelligence engine. "Auto-Pilot" uses platform defaults.
+                        </p>
+                      </div>
+
+                      {/* Expandable Key Vault Container */}
+                      <div className="p-3 bg-[#0d0d0d]/90 border border-brand-border/30 rounded-lg space-y-3">
+                        <div className="flex items-center justify-between cursor-pointer select-none" onClick={() => setShowSecretKeys(prev => ({ ...prev, _expanded: !prev._expanded }))}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-white flex items-center gap-1.5 font-black">
+                              🔑 KEY VAULT
+                            </span>
+                            {Object.values(customKeys).some(Boolean) ? (
+                              <span className="text-[7px] font-mono px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase tracking-wider">LOADED</span>
+                            ) : (
+                              <span className="text-[7px] font-mono px-1 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-bold uppercase tracking-wider font-black">EMPTY</span>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-mono text-brand-muted font-black uppercase hover:text-white transition-colors">
+                            {showSecretKeys._expanded ? "[ COLLAPSE ]" : "[ MANAGE ]"}
+                          </span>
+                        </div>
+
+                        {showSecretKeys._expanded && (
+                          <div className="space-y-3 pt-2 border-t border-brand-border/10">
+                            <p className="text-[8px] font-mono text-brand-muted/55 leading-relaxed uppercase tracking-wider">
+                              API credentials are saved purely inside local storage. Bring yours to keep processing uninterrupted.
+                            </p>
+
+                            {/* Gemini Input */}
+                            <div className="space-y-1.5">
+                              <label className="text-[8.5px] font-mono uppercase text-brand-muted flex items-center justify-between">
+                                <span>Gemini API Key</span>
+                                <span className="text-[7.5px] text-zinc-500 font-mono">Google AI</span>
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type={showSecretKeys.gemini ? "text" : "password"}
+                                  value={customKeys.gemini}
+                                  onChange={(e) => setCustomKeys(prev => ({ ...prev, gemini: e.target.value }))}
+                                  placeholder="AIzaSy..."
+                                  className="h-8 text-[10px] font-mono bg-black/80 border-brand-border/60 focus:border-brand-accent/45 rounded-sm"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  type="button"
+                                  onClick={() => setShowSecretKeys(prev => ({ ...prev, gemini: !prev.gemini }))}
+                                  className="h-8 w-8 border border-brand-border/45 bg-black/40 hover:bg-white/5 shrink-0"
+                                >
+                                  {showSecretKeys.gemini ? <EyeOff className="w-3.5 h-3.5 text-brand-muted" /> : <Eye className="w-3.5 h-3.5 text-brand-muted" />}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Mistral Input */}
+                            <div className="space-y-1.5">
+                              <label className="text-[8.5px] font-mono uppercase text-brand-muted flex items-center justify-between">
+                                <span>Mistral API Key</span>
+                                <span className="text-[7.5px] text-zinc-500 font-mono">La Plateforme</span>
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type={showSecretKeys.mistral ? "text" : "password"}
+                                  value={customKeys.mistral}
+                                  onChange={(e) => setCustomKeys(prev => ({ ...prev, mistral: e.target.value }))}
+                                  placeholder="Mistral key..."
+                                  className="h-8 text-[10px] font-mono bg-black/80 border-brand-border/60 focus:border-brand-accent/45 rounded-sm"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  type="button"
+                                  onClick={() => setShowSecretKeys(prev => ({ ...prev, mistral: !prev.mistral }))}
+                                  className="h-8 w-8 border border-brand-border/45 bg-black/40 hover:bg-white/5 shrink-0"
+                                >
+                                  {showSecretKeys.mistral ? <EyeOff className="w-3.5 h-3.5 text-brand-muted" /> : <Eye className="w-3.5 h-3.5 text-brand-muted" />}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* OpenRouter Input */}
+                            <div className="space-y-1.5">
+                              <label className="text-[8.5px] font-mono uppercase text-brand-muted flex items-center justify-between">
+                                <span>OpenRouter Key</span>
+                                <span className="text-[7.5px] text-zinc-500 font-mono">openrouter.ai</span>
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type={showSecretKeys.openrouter ? "text" : "password"}
+                                  value={customKeys.openrouter}
+                                  onChange={(e) => setCustomKeys(prev => ({ ...prev, openrouter: e.target.value }))}
+                                  placeholder="sk-or-v1-..."
+                                  className="h-8 text-[10px] font-mono bg-black/80 border-brand-border/60 focus:border-brand-accent/45 rounded-sm"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  type="button"
+                                  onClick={() => setShowSecretKeys(prev => ({ ...prev, openrouter: !prev.openrouter }))}
+                                  className="h-8 w-8 border border-brand-border/45 bg-black/40 hover:bg-white/5 shrink-0"
+                                >
+                                  {showSecretKeys.openrouter ? <EyeOff className="w-3.5 h-3.5 text-brand-muted" /> : <Eye className="w-3.5 h-3.5 text-brand-muted" />}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Groq Input */}
+                            <div className="space-y-1.5">
+                              <label className="text-[8.5px] font-mono uppercase text-brand-muted flex items-center justify-between">
+                                <span>Groq API Key</span>
+                                <span className="text-[7.5px] text-zinc-500 font-mono">Groq Console</span>
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type={showSecretKeys.groq ? "text" : "password"}
+                                  value={customKeys.groq}
+                                  onChange={(e) => setCustomKeys(prev => ({ ...prev, groq: e.target.value }))}
+                                  placeholder="gsk_..."
+                                  className="h-8 text-[10px] font-mono bg-black/80 border-brand-border/60 focus:border-brand-accent/45 rounded-sm"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  type="button"
+                                  onClick={() => setShowSecretKeys(prev => ({ ...prev, groq: !prev.groq }))}
+                                  className="h-8 w-8 border border-brand-border/45 bg-black/40 hover:bg-white/5 shrink-0"
+                                >
+                                  {showSecretKeys.groq ? <EyeOff className="w-3.5 h-3.5 text-brand-muted" /> : <Eye className="w-3.5 h-3.5 text-brand-muted" />}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
