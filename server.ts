@@ -4,7 +4,7 @@ import { createServer as createViteServer } from "vite";
 import axios from "axios";
 import { z } from "zod";
 import dotenv from "dotenv";
-import { DocumentType, Tone, Length } from "./src/types.ts";
+import { DocumentType, Tone, Length, TargetPlatform } from "./src/types.ts";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -35,7 +35,7 @@ app.use(express.json());
 
 // Zod schema for validation
 const genSchema = z.object({
-  repoUrl: z.string().url().max(255),
+  repoUrl: z.string().url().max(255).optional().or(z.literal("")),
   docType: z.nativeEnum(DocumentType),
   tone: z.nativeEnum(Tone),
   length: z.nativeEnum(Length),
@@ -46,7 +46,18 @@ const genSchema = z.object({
     mistral: z.string().optional(),
     openrouter: z.string().optional(),
     groq: z.string().optional()
-  }).optional()
+  }).optional(),
+  
+  // Custom Target Platform & Manual Inputs
+  targetPlatform: z.nativeEnum(TargetPlatform).optional(),
+  appName: z.string().max(100).optional(),
+  appDescription: z.string().max(1000).optional(),
+  webUrl: z.string().url().max(255).optional().or(z.literal("")),
+  analyticsAndTracking: z.array(z.string()).optional(),
+  authProvider: z.string().max(50).optional(),
+  packageName: z.string().max(100).optional(),
+  androidPermissions: z.array(z.string()).optional(),
+  monetizationServices: z.array(z.string()).optional()
 });
 
 // Helper to extract owner and repo from URL
@@ -91,12 +102,50 @@ async function fetchRepoInfo(owner: string, repo: string) {
 app.post("/api/generate", async (req, res) => {
   try {
     const validated = genSchema.parse(req.body);
-    const githubInfo = parseGitHubUrl(validated.repoUrl);
-    if (!githubInfo) {
-      return res.status(400).json({ error: "Invalid GitHub URL" });
+    
+    const isGithubPlatform = !validated.targetPlatform || validated.targetPlatform === TargetPlatform.GithubRepo;
+    if (isGithubPlatform && (!validated.repoUrl || !parseGitHubUrl(validated.repoUrl))) {
+      return res.status(400).json({ error: "A valid GitHub URL is required for standard Repository documents." });
     }
 
-    const repoContext = await fetchRepoInfo(githubInfo.owner, githubInfo.repo);
+    if (!isGithubPlatform && !validated.appName) {
+      return res.status(400).json({ error: "App Name is required for Web and Android applications." });
+    }
+
+    let repoContext: any = null;
+    const githubInfo = validated.repoUrl ? parseGitHubUrl(validated.repoUrl) : null;
+    
+    if (githubInfo) {
+      try {
+        repoContext = await fetchRepoInfo(githubInfo.owner, githubInfo.repo);
+      } catch (err: any) {
+        if (!isGithubPlatform && validated.appName) {
+          console.warn("GitHub fetch failed, falling back to manual app details:", err.message);
+        } else {
+          return res.status(400).json({ error: err.message || "Failed to fetch GitHub repository data." });
+        }
+      }
+    }
+
+    if (!repoContext) {
+      const appName = validated.appName || "Void Application";
+      const appDesc = validated.appDescription || "A modern software application.";
+      
+      repoContext = {
+        fullName: appName,
+        description: appDesc,
+        language: validated.targetPlatform === TargetPlatform.AndroidApp ? "Kotlin/Java" : "TypeScript/JavaScript",
+        topics: [validated.targetPlatform || "software"],
+        homepage: validated.webUrl || "",
+        readme: "",
+        license: "",
+        packageJson: {
+          name: appName.toLowerCase().replace(/\s+/g, "-"),
+          description: appDesc,
+          dependencies: {}
+        }
+      };
+    }
     
     const provider = validated.provider || "auto";
     const customKeys = validated.customKeys || {};
@@ -185,9 +234,44 @@ app.post("/api/generate", async (req, res) => {
 - STRICTOR IP RULE: DO NOT use copyrighted terms (Wade Wilson, Deadpool, Marvel, Avengers, Disney, X-Men, chimichangas, katanas). Rely purely on your own mercenary-grade sarcasm and cynical charm!`;
     }
 
-    const systemPrompt = `You are an expert technical and legal writer, playing the character of a legendary writer. Your task is to generate a ${validated.docType} document for a GitHub repository.
+    let platformInstructions = "";
+    let platformHeaderStr = "for a GitHub repository";
+    if (validated.targetPlatform === TargetPlatform.WebApp) {
+      platformHeaderStr = "for a Web Application / SaaS Platform";
+      const trackingList = validated.analyticsAndTracking && validated.analyticsAndTracking.length > 0 
+        ? validated.analyticsAndTracking.join(", ") 
+        : "Standard analytical tracking & cookies";
+      platformInstructions = `
+TARGET PLATFORM CONFIGURATION (WEB APPLICATION / SAAS):
+- Live Web App URL / Domain: ${validated.webUrl || "[Web App URL, e.g. https://example.com]"}
+- Data Collection & Cookies Tracking Enabled: ${trackingList}
+- Authentication & Identity Provider: ${validated.authProvider || "None / Guest Access"}
+- Web Application Specific Legal Requirements:
+  * Your generated document must exhaustively address specific web-based disclosures, including cookie consent policies, first-party essential cookies vs. third-party tracking, localized cache/session storage, and secure third-party payment processors (such as Stripe payments security and compliance) if payments are enabled.
+  * For Web/SaaS Terms of Service, explicitly cover cloud hosting capacity limits, registration credentials safety, account deletion/termination clauses, and clear Acceptable Use Policies (banning scrapers, automated crawlers, database spamming, and reverse proxies).`;
+    } else if (validated.targetPlatform === TargetPlatform.AndroidApp) {
+      platformHeaderStr = "for a Native Android Mobile Application destined for release on the Google Play Store";
+      const permissionsList = validated.androidPermissions && validated.androidPermissions.length > 0 
+        ? validated.androidPermissions.join(", ") 
+        : "None specified";
+      const monetizationList = validated.monetizationServices && validated.monetizationServices.length > 0 
+        ? validated.monetizationServices.join(", ") 
+        : "None specified";
+      platformInstructions = `
+TARGET PLATFORM CONFIGURATION (NATIVE ANDROID MOBILE APP):
+- Mobile App Package Name: ${validated.packageName || "[Package Name, e.g. com.company.app]"}
+- Android App Device Permissions Required: ${permissionsList}
+- Integrated SDK & Third-Party Monetization: ${monetizationList}
+- Android/Google Play Compliance Requirements:
+  * ALL generated content must fully respect Google Play Store Developer and Privacy policies to ensure immediate app approval.
+  * For Privacy Policies: You MUST outline each requested Android permission (Camera, Location, Push Notifications, Bluetooth, Storage) in a distinct bullet or section, describing exactly how it functions, why the app requires it, and that the data is treated as transient or securely transmitted. Disclose Google Play developer data safety standards.
+  * For EULAs / Terms of Service: Draft it as an End-User License Agreement explicitly formatted for a mobile device. Include explicit reverse engineering prohibitions, APK side-loading bans, app integrity protections, and a mandatory "Third-Party Store Override" stating that this agreement is strictly between the developer and the End-User, and that Google LLC/Google Play bears no warranty, liability, or support responsibility for the software.`;
+    }
+
+    const systemPrompt = `You are an expert technical and legal writer, playing the character of a legendary writer. Your task is to generate a ${validated.docType} document ${platformHeaderStr}.
 Tone Profile: ${validated.tone}
 Length Target: ${lengthInstruction}
+${platformInstructions}
 
 IMPORTANT RULES:
 1. Output ONLY the Markdown document. Do NOT output any introductory chatter, preambles, or post-generation notes. Start directly with the first header.
@@ -210,9 +294,17 @@ package.json: ${typeof repoContext.packageJson === "object" ? JSON.stringify(rep
 
     let userPrompt = `Generate a ${validated.docType} for the repository "${repoContext.fullName}" in ${validated.tone} tone and ${validated.length} length.`;
     if (validated.tone === Tone.DeadpoolCool) {
-      userPrompt = `URGENT MANDATE: Generate a ${validated.docType} for the repository "${repoContext.fullName}". You are commanded to craft an absolute masterpiece of raw, high-attitude "Deadpool-cool" style. 
+      if (validated.targetPlatform === TargetPlatform.AndroidApp) {
+        userPrompt = `URGENT MANDATE: Generate a Play-Store-compliant ${validated.docType} for the Native Android Mobile Application "${repoContext.fullName}" (${validated.packageName || "com.example.app"}). Unleash ultimate "Deadpool-cool" style: be unhinged, hilariously cynical, break the 4th wall, make fun of Google's policy compliance or the users, but keep the legal terms 100% correct and airtight. Length Target: ${validated.length}.`;
+      } else if (validated.targetPlatform === TargetPlatform.WebApp) {
+        userPrompt = `URGENT MANDATE: Generate a GDPR-compliant ${validated.docType} for the Web Application "${repoContext.fullName}" (${validated.webUrl || "https://example.com"}). Unleash ultimate "Deadpool-cool" style: sarcastically mock browser tracking, cookies, legal agreements, and the fact that absolutely no one reads these, but ensure the legal shields are utterly watertight. Length Target: ${validated.length}.`;
+      } else {
+        userPrompt = `URGENT MANDATE: Generate a ${validated.docType} for the repository "${repoContext.fullName}". You are commanded to craft an absolute masterpiece of raw, high-attitude "Deadpool-cool" style. 
 
 Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash absolute snark, brilliant meta-cynicism, mock the developers/users, and strip all pleasantries. Deliver 100% legally correct content but loaded with ultimate disrespect, parenthetical side-eyes, and fourth-wall breaks. Under no circumstances should you sound like a standard academic template. Length Target: ${validated.length}.`;
+      }
+    } else if (validated.targetPlatform === TargetPlatform.AndroidApp || validated.targetPlatform === TargetPlatform.WebApp) {
+      userPrompt = `Generate a ${validated.docType} for the application "${repoContext.fullName}" (Target Context: ${validated.targetPlatform === TargetPlatform.AndroidApp ? "Android Play Store app" : "Web app"}). Match this target context carefully in the generated document structure. Length Target: ${validated.length}.`;
     }
 
     const versionCount = validated.versionCount || 1;

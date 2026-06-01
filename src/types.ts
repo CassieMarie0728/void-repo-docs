@@ -16,6 +16,12 @@ export enum DocumentType {
   Disclaimer = "Disclaimer"
 }
 
+export enum TargetPlatform {
+  GithubRepo = "github_repo",
+  WebApp = "web_app",
+  AndroidApp = "android_app"
+}
+
 export enum Tone {
   Formal = "Formal",
   Professional = "Professional",
@@ -41,13 +47,28 @@ export interface CustomApiKeys {
 }
 
 export interface GenRequest {
-  repoUrl: string;
+  repoUrl?: string;
   docType: DocumentType;
   tone: Tone;
   length: Length;
   versionCount?: number;
   provider?: ProviderType;
   customKeys?: CustomApiKeys;
+
+  // Target Platform Settings
+  targetPlatform?: TargetPlatform;
+  appName?: string;
+  appDescription?: string;
+
+  // Web App specific properties
+  webUrl?: string;
+  analyticsAndTracking?: string[];
+  authProvider?: string;
+
+  // Android App specific properties
+  packageName?: string;
+  androidPermissions?: string[];
+  monetizationServices?: string[];
 }
 
 export interface GenResponse {

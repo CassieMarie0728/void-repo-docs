@@ -54,7 +54,7 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
-import { DocumentType, Tone, Length, GenRequest, GenResponse } from "./types";
+import { DocumentType, Tone, Length, TargetPlatform, GenRequest, GenResponse } from "./types";
 import axios from "axios";
 import { NotionExportDialog } from "./components/NotionExportDialog";
 import { DiffViewer } from "./components/DiffViewer";
@@ -252,6 +252,16 @@ export default function App() {
     localStorage.setItem("void_selected_provider", newProvider);
   };
   const [docType, setDocType] = useState<DocumentType>(DocumentType.Readme);
+  const [targetPlatform, setTargetPlatform] = useState<TargetPlatform>(TargetPlatform.GithubRepo);
+  const [appName, setAppName] = useState("");
+  const [appDescription, setAppDescription] = useState("");
+  const [webUrl, setWebUrl] = useState("");
+  const [analyticsAndTracking, setAnalyticsAndTracking] = useState<string[]>([]);
+  const [authProvider, setAuthProvider] = useState("none");
+  const [packageName, setPackageName] = useState("");
+  const [androidPermissions, setAndroidPermissions] = useState<string[]>([]);
+  const [monetizationServices, setMonetizationServices] = useState<string[]>([]);
+  
   const [tone, setTone] = useState<Tone>(Tone.Professional);
   const [length, setLength] = useState<Length>(Length.Medium);
   const [isLoading, setIsLoading] = useState(false);
@@ -469,11 +479,17 @@ export default function App() {
   // Reset overwrite confirmation whenever parameters change
   useEffect(() => {
     setConfirmGenerate(false);
-  }, [repoUrl, docType, tone, length]);
+  }, [repoUrl, docType, tone, length, targetPlatform, appName, appDescription, webUrl, analyticsAndTracking, authProvider, packageName, androidPermissions, monetizationServices]);
 
   const handleGenerate = async () => {
-    if (!repoUrl) {
+    const isGithubPlatform = targetPlatform === TargetPlatform.GithubRepo;
+    if (isGithubPlatform && !repoUrl) {
       toast.error("Enter a repo URL, unless you want me to write documentation for your imaginary friends.");
+      return;
+    }
+
+    if (!isGithubPlatform && !appName.trim()) {
+      toast.error("Enter an App Name to identify your masterwork.");
       return;
     }
 
@@ -498,6 +514,15 @@ export default function App() {
         versionCount,
         provider,
         customKeys,
+        targetPlatform,
+        appName,
+        appDescription,
+        webUrl,
+        analyticsAndTracking,
+        authProvider,
+        packageName,
+        androidPermissions,
+        monetizationServices,
       } as GenRequest);
       
       const resultsArray = response.data.markdowns && Array.isArray(response.data.markdowns)
@@ -1169,13 +1194,265 @@ ${htmlContent}
                       <p className="text-[10px] text-brand-muted/50 italic font-serif">Adjust the parameters of your failure.</p>
                     </div>
 
+                    {/* Target Platform Segmented Tab */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-mono tracking-widest text-[#981518] ml-0.5 font-bold">Target Platform Context</label>
+                      <div className="grid grid-cols-3 gap-1 p-0.5 bg-[#0f0f11] rounded border border-[#212124]">
+                        <button
+                          type="button"
+                          onClick={() => setTargetPlatform(TargetPlatform.GithubRepo)}
+                          className={`py-1.5 px-1 text-[9px] font-mono rounded tracking-wider uppercase transition-all duration-200 ${
+                            targetPlatform === TargetPlatform.GithubRepo
+                              ? "bg-brand-accent/20 text-white border border-[#981518]/40 shadow-sm"
+                              : "text-brand-muted hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          Repo File
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTargetPlatform(TargetPlatform.WebApp)}
+                          className={`py-1.5 px-1 text-[9px] font-mono rounded tracking-wider uppercase transition-all duration-200 ${
+                            targetPlatform === TargetPlatform.WebApp
+                              ? "bg-brand-accent/20 text-white border border-[#981518]/40 shadow-sm"
+                              : "text-brand-muted hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          Web App
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTargetPlatform(TargetPlatform.AndroidApp)}
+                          className={`py-1.5 px-1 text-[9px] font-mono rounded tracking-wider uppercase transition-all duration-200 ${
+                            targetPlatform === TargetPlatform.AndroidApp
+                              ? "bg-brand-accent/20 text-white border border-[#981518]/40 shadow-sm"
+                              : "text-brand-muted hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          Android
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Web Application Configuration Panel */}
+                    <AnimatePresence mode="popLayout">
+                      {targetPlatform === TargetPlatform.WebApp && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-4 pt-1 border-t border-brand-border/30 overflow-hidden"
+                        >
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">App Name *</label>
+                            <Input 
+                              placeholder="e.g. Void Matrix SaaS"
+                              className="h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"
+                              value={appName}
+                              onChange={(e) => setAppName(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">App Description</label>
+                            <textarea 
+                              placeholder="Describe your web application features and functions..."
+                              rows={3}
+                              className="w-full p-2.5 bg-black/60 border border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded text-brand-text placeholder-brand-muted/40 outline-none resize-none"
+                              value={appDescription}
+                              onChange={(e) => setAppDescription(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">App Domain / Live URL</label>
+                            <Input 
+                              placeholder="https://app.example.com"
+                              className="h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"
+                              value={webUrl}
+                              onChange={(e) => setWebUrl(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Identity Provider</label>
+                            <Select value={authProvider} onValueChange={setAuthProvider}>
+                              <SelectTrigger className="h-10 bg-black/60 border-brand-border text-xs rounded">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-brand-config border-brand-border text-brand-text">
+                                <SelectItem value="none" className="text-xs font-mono">No Auth (Guest Access)</SelectItem>
+                                <SelectItem value="firebase" className="text-xs font-mono">Firebase Authentication</SelectItem>
+                                <SelectItem value="google" className="text-xs font-mono">Google Sign-In / OAuth 2.0</SelectItem>
+                                <SelectItem value="custom" className="text-xs font-mono">Custom Database Auth</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Data & Analytics Tracking</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                { id: "cookies", label: "Cookies" },
+                                { id: "local_storage", label: "LocalStorage" },
+                                { id: "google_analytics", label: "Google Analytics" },
+                                { id: "stripe_payments", label: "Stripe Billing" },
+                                { id: "user_accounts", label: "User Profiles" }
+                              ].map(item => {
+                                const selected = analyticsAndTracking.includes(item.id);
+                                return (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setAnalyticsAndTracking(prev => 
+                                        prev.includes(item.id) 
+                                          ? prev.filter(x => x !== item.id) 
+                                          : [...prev, item.id]
+                                      );
+                                    }}
+                                    className={`py-1 px-2.5 font-mono text-[9px] rounded-full border transition-all duration-150 ${
+                                      selected 
+                                        ? "bg-brand-accent/15 border-brand-accent/60 text-white" 
+                                        : "bg-black/30 border-brand-border/40 text-brand-muted hover:border-brand-muted/70"
+                                    }`}
+                                  >
+                                    {selected ? "✓ " : "+ "} {item.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Native Android App Configuration Panel */}
+                    <AnimatePresence mode="popLayout">
+                      {targetPlatform === TargetPlatform.AndroidApp && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-4 pt-1 border-t border-brand-border/30 overflow-hidden"
+                        >
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">App Name *</label>
+                            <Input 
+                              placeholder="e.g. Ghost Terminal Native"
+                              className="h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"
+                              value={appName}
+                              onChange={(e) => setAppName(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">App Description</label>
+                            <textarea 
+                              placeholder="Describe your Android mobile app features and user roles..."
+                              rows={3}
+                              className="w-full p-2.5 bg-black/60 border border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded text-brand-text placeholder-brand-muted/40 outline-none resize-none"
+                              value={appDescription}
+                              onChange={(e) => setAppDescription(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Package Name</label>
+                            <Input 
+                              placeholder="e.g. com.voidforge.app"
+                              className="h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded font-mono"
+                              value={packageName}
+                              onChange={(e) => setPackageName(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">App Permissions Required</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                { id: "camera", label: "Camera" },
+                                { id: "location", label: "Fine Location" },
+                                { id: "storage", label: "Media Storage" },
+                                { id: "notifications", label: "Notifications" },
+                                { id: "bluetooth", label: "Bluetooth" },
+                                { id: "microphone", label: "Microphone" }
+                              ].map(item => {
+                                const selected = androidPermissions.includes(item.id);
+                                return (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setAndroidPermissions(prev => 
+                                        prev.includes(item.id) 
+                                          ? prev.filter(x => x !== item.id) 
+                                          : [...prev, item.id]
+                                      );
+                                    }}
+                                    className={`py-1 px-2.5 font-mono text-[9px] rounded-full border transition-all duration-150 ${
+                                      selected 
+                                        ? "bg-brand-accent/15 border-brand-accent/60 text-white" 
+                                        : "bg-black/30 border-brand-border/40 text-brand-muted hover:border-brand-muted/70"
+                                    }`}
+                                  >
+                                    {selected ? "✓ " : "+ "} {item.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Integrated SDK Services</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                { id: "google_play_billing", label: "Google Play IAP" },
+                                { id: "admob", label: "AdMob Monetization" },
+                                { id: "firebase_crashlytics", label: "Firebase Logs" }
+                              ].map(item => {
+                                const selected = monetizationServices.includes(item.id);
+                                return (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setMonetizationServices(prev => 
+                                        prev.includes(item.id) 
+                                          ? prev.filter(x => x !== item.id) 
+                                          : [...prev, item.id]
+                                      );
+                                    }}
+                                    className={`py-1 px-2.5 font-mono text-[9px] rounded-full border transition-all duration-150 ${
+                                      selected 
+                                        ? "bg-[#981518]/25 border-brand-accent/60 text-white" 
+                                        : "bg-black/30 border-brand-border/40 text-brand-muted hover:border-brand-muted/70"
+                                    }`}
+                                  >
+                                    {selected ? "✓ " : "+ "} {item.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     {/* Repo Input */}
                     <div className="space-y-2">
-                      <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Repository URL</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Repository URL</label>
+                        {targetPlatform !== TargetPlatform.GithubRepo && (
+                          <span className="text-[8px] font-mono text-brand-muted/50 italic mr-0.5">Optional scans</span>
+                        )}
+                      </div>
                       <div className="relative group">
                         <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 group-focus-within:opacity-100 transition-opacity" />
                         <Input 
-                          placeholder="Target repository..."
+                          placeholder={targetPlatform === TargetPlatform.GithubRepo ? "Target repository..." : "Codebase repo for scanning (optional)..."}
                           className="pl-9 h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"
                           value={repoUrl}
                           onChange={(e) => setRepoUrl(e.target.value)}
