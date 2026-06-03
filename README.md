@@ -1,12 +1,3 @@
----
-<!--
-Document: README
-Repository: https://github.com/CassieMarie0728/repo
-Tone: Deadpool-cool | Length: long
-Generated: 2026-05-30T04:09:51.492Z
--->
----
-
 # VOID (Voice of Intense Disdain): Repo Documents: Because Lawyers Charge by the Hour and Your Sanity Isn't Billable
 
 <div align="center">
