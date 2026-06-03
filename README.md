@@ -1,9 +1,20 @@
+---
+<!--
+Document: README
+Repository: https://github.com/CassieMarie0728/repo
+Tone: Deadpool-cool | Length: long
+Generated: 2026-05-30T04:09:51.492Z
+-->
+---
+
 # VOID (Voice of Intense Disdain): Repo Documents: Because Lawyers Charge by the Hour and Your Sanity Isn't Billable
 
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+<p align="center">
+  <img src="./assets/void-repo-docs-banner.png" alt="VOID Repo Documents — Voice of Intense Disdain" width="100%">
+</p>
 <p><em>VOID Repo Docs: Ignorance of the law is no excuse... but it’s a great defense strategy.</em></p>
-</div>
+
+---
 
 ## What Fresh Legal Hell Is This?
 
@@ -14,6 +25,8 @@ Enter VOID: Repo Documents (**V**oice **O**f **I**ntense **D**isdain), the TypeS
 This repository is your one-stop shop for generating codebase-specific legal documents that won’t make your lawyer weep—at least not *too* much. Think of it as the Swiss Army knife of legal templates, except instead of a tiny pair of scissors, you get ironclad (or at least *iron-ish*) contracts, licenses, and disclaimers tailored to your project’s needs. Welcome to where TypeScript meets torts, where `npm install` collides with "non-disclosure," and where your `package.json` gets a side of "privacy policy."
 
 **Current Status:** Functional, but if it starts demanding stock options, unplug it and run.
+
+---
 
 ## Here’s What You Can Generate With VOID Repo Docs:
 
@@ -27,6 +40,8 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 | **Code of Conduct**          | Rules for community behavior                                            | Because even developers need to play nice.                                      |
 | **And more!**         |NDAs, Security Policies, Disclaimers...          | Because why stop at the bare minimum?)
 
+---
+
 ## Why Does This Exist?
 
 **Because**:
@@ -34,6 +49,8 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 - Legal jargon is the only language where "heretofore" and "whereas" are considered valid words.
 - You’d rather spend your time writing code than deciphering whether "indemnify" means "protect" or "summon a demon."
 - The AI overlords (bless their silicon hearts) can spit out a 10-page NDA faster than you can say "I am not a lawyer, but..."
+
+---
 
 ## Why Should You Care?
 
@@ -52,6 +69,8 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 
 5. **You Like Free Stuff**
    - This app is free. Your lawyer is not. Math checks out.
+
+---
 
 ## How to Use This Thing Without Breaking It
 
@@ -74,6 +93,8 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 - **Templates:** Edit the `templates/` directory if you want to add your own flair.
 - **Prompt Engineering:** The AI is only as good as your prompts. Be specific. "Write a privacy policy that doesn’t sound like it was written by a robot" is a good start.
 
+---
+
 ## What’s in the Box? Because "It Works" Isn't a Feature
 
 Glad you asked. Powered by the latest in "please don’t sue us" technology, the AI generates documents that are:
@@ -86,6 +107,8 @@ Glad you asked. Powered by the latest in "please don’t sue us" technology, the
 | **TypeScript-Powered**      | Because JavaScript is so 2015.                 |
 | **AI-Generated**            | Trained on a corpus of legal documents, Stack Overflow answers, and Reddit rants. |
 | **Open Source**             | Steal it, fork it, modify it. Just don’t sell it as your own. (See: License.) |
+
+---
 
 ## Example Outputs: Seeing is Believing
 
@@ -100,6 +123,8 @@ Here’s a taste of what you can expect. Hint: It can be legally binding and sli
 ### **Contributor License Agreement (CLA)**
 > *"If you contribute code, it’s ours now. We’ll do whatever we want with it, including but not limited to: selling it, losing it, or using it to power our toaster. Thanks for the free labor!"*
 
+---
+
 ## Limitations: Or, "Why You Still Need a Lawyer"
 
 1. **This Isn’t Legal Advice**
@@ -113,6 +138,8 @@ Here’s a taste of what you can expect. Hint: It can be legally binding and sli
 
 4. **You’re Still Responsible**
    - If you use this tool to generate a document and it turns out to be as legally binding as a handshake agreement, that’s on you.
+
+---
 
 ## Contributing: Even AI Need Friends
 
@@ -143,6 +170,8 @@ Found a bug? Think the AI is trippin' on acid? Want to add support for more docu
 
 *Disclaimer: I reserve the right to reject PRs that are boring, overly serious, or written in Comic Sans.*
 
+---
+
 ## Roadmap: What’s Next? Who Knows.
 
 Here’s what *might* happen in the future (no promises):
@@ -153,6 +182,8 @@ Here’s what *might* happen in the future (no promises):
 - **More Document Types** – Because why stop at boring legal docs? How about AI-generated cease-and-desist letters? *Too far?*
 - **Better Customization** – One size does *not* fit all.
 - **Integration with More AI Models** – Gemini is cool, but variety is the spice of life.
+
+---
 
 ## License: The Irony is Not Lost on Me
 
@@ -170,6 +201,8 @@ See [LICENSE](LICENSE) for the full text. *(tl;dr: It’s mostly just saying "do
 
 *Fun fact: The MIT License is shorter than most of the documents this thing generates. Coincidence? Probably.*
 
+---
+
 ## Support Needed?
 
 Need help? Found a bug? Want to suggest a feature? Here’s how to reach out:
@@ -177,6 +210,8 @@ Need help? Found a bug? Want to suggest a feature? Here’s how to reach out:
 - **GitHub Issues**: [Open an issue](https://github.com/CassieMarie0728/repo-docs-writer/issues). Be descriptive. Include steps to reproduce. Don’t just say "it’s broken."
 - **Email**: `**Need Help?** Try turning it off and on again. If that fails, email [Contact Email](cmcrossno@gmail.com).
 - **Carrier Pigeon**: Not recommended, but if you’re into that sort of thing, knock yourself out.
+
+---
 
 ## FAQ: Questions No One Asked But I Answered Anyway
 
@@ -204,14 +239,18 @@ A: Because legal documents are already soul-crushingly boring. I figured I’d a
 #### **Q: What’s the worst that could happen?**
 A: You could accidentally write a clause that says "the user must forfeit their firstborn child to [Company Name]." So, you know, don’t do that.
 
+---
+
 ## Acknowledgements: Because Even Smartasses Have Heroes
 
 - **The Open Source Community**: For making it possible to build cool things without selling my soul.
-- - **My Lawyers:** Who are probably reading this and shaking their heads. Hi, guys!
+- **My Lawyers:** Who are probably reading this and shaking their heads. Hi, guys!
 - **TypeScript**: For saving me from JavaScript’s "everything is a string" hellscape.
 - **Google’s Gemini API**: For doing the heavy lifting so I don’t have to and for not crashing *every* time I ask it to generate a Privacy Policy.
 - **The lawyers who review this stuff**: May your coffee be strong and your billable hours plentiful.
 - **Red Bull**: The real MVP.
+
+---
 
 ## Final Thoughts: Why Are You Still Reading This?
 
@@ -228,6 +267,8 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
 ### Disclaimer: The Part Where I Cover My Own Ass(ets)
 
 **Disclaimer:** All documents are a starting template and should be reviewed by a qualified attorney before use. The authors, contributors, and maintainers of this repository are not responsible for any legal consequences arising from the use, misuse, or interpretation of the generated documents. This tool is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the tool or the use or other dealings in the tool. Basically, don’t be stupid, and if in doubt, hire a lawyer. I'm **not** a lawyer (unless you count the AI, and even then, it’s more of a "lawyer-adjacent" situation). Always have a real human lawyer review the output. They’ll charge you $500/hour to tell you I did a decent job. But use at your own risk. Void where prohibited. Batteries not included.
+
+---
 
 <div align="center">
   <p><em>Happy documenting! May your legal docs be ever in your favor.</em></p>
