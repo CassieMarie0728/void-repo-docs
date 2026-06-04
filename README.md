@@ -1,3 +1,12 @@
+---
+<!--
+Document: README
+Repository: https://github.com/CassieMarie0728/repo
+Tone: Deadpool-cool | Length: long
+Generated: 2026-05-30T04:09:51.492Z
+-->
+---
+
 # VOID (Voice of Intense Disdain): Repo Documents: Because Lawyers Charge by the Hour and Your Sanity Isn't Billable
 
 <p align="center">
@@ -9,6 +18,7 @@
 
 ## What Fresh Legal Hell Is This?
 
+<div style="text-align: justify;">
 You ever stare at a blank `LICENSE.md` file and think, *"I could write this myself, but do I really want to live in a world where I understand the difference between MIT and AGPL?"* No. No, you don’t.
 
 Enter VOID: Repo Documents (**V**oice **O**f **I**ntense **D**isdain), the TypeScript-powered, AI-generated legal document factory that spits out the fine print so you don’t have to. This is where code meets legalese—without the billable hours or the condescending nods from people in suits.
@@ -16,6 +26,7 @@ Enter VOID: Repo Documents (**V**oice **O**f **I**ntense **D**isdain), the TypeS
 This repository is your one-stop shop for generating codebase-specific legal documents that won’t make your lawyer weep—at least not *too* much. Think of it as the Swiss Army knife of legal templates, except instead of a tiny pair of scissors, you get ironclad (or at least *iron-ish*) contracts, licenses, and disclaimers tailored to your project’s needs. Welcome to where TypeScript meets torts, where `npm install` collides with "non-disclosure," and where your `package.json` gets a side of "privacy policy."
 
 **Current Status:** Functional, but if it starts demanding stock options, unplug it and run.
+</div>
 
 ---
 
@@ -29,22 +40,25 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 | **Contributor License Agreement** | Terms for contributors                                              | Because open source doesn’t mean "free for all."                                |
 | **Disclaimer**               | "We’re not responsible if this breaks your stuff"                       | CYA (Cover Your Assets).                                                        |
 | **Code of Conduct**          | Rules for community behavior                                            | Because even developers need to play nice.                                      |
-| **And more!**                | NDAs, Security Policies, Disclaimers...    | Because why stop at the bare minimum?)    |
+| **And more!**         |NDAs, Security Policies, Disclaimers...          | Because why stop at the bare minimum?)
 
 ---
 
 ## Why Does This Exist?
 
+<div style="text-align: justify;">
 **Because**:
 - Lawyers are expensive. Like, "sell-a-kidney-for-a-consultation" expensive.
 - Legal jargon is the only language where "heretofore" and "whereas" are considered valid words.
 - You’d rather spend your time writing code than deciphering whether "indemnify" means "protect" or "summon a demon."
 - The AI overlords (bless their silicon hearts) can spit out a 10-page NDA faster than you can say "I am not a lawyer, but..."
+</div>
 
 ---
 
 ## Why Should You Care?
 
+<div style="text-align: justify;">
 1. **Codebase-specific Documentation** 
    - Generic legal templates are for cowards. This thing tailors docs to *your* project. Open-source library? SaaS platform? Personal blog about your cat’s existential crisis? I’ve got you covered *AND* because one size fits all is a lie perpetuated by sock manufacturers. 
 
@@ -60,11 +74,13 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 
 5. **You Like Free Stuff**
    - This app is free. Your lawyer is not. Math checks out.
+</div>
 
 ---
 
 ## How to Use This Thing Without Breaking It
 
+<div style="text-align: justify;">
 1. **Pick Your Poison**
    - Select the type of document you need (e.g., "Privacy Policy," "MIT License," "Apology Letter to Your Users After a Data Breach").
 
@@ -83,12 +99,15 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 ### Customizing Output
 - **Templates:** Edit the `templates/` directory if you want to add your own flair.
 - **Prompt Engineering:** The AI is only as good as your prompts. Be specific. "Write a privacy policy that doesn’t sound like it was written by a robot" is a good start.
+</div>
 
 ---
 
 ## What’s in the Box? Because "It Works" Isn't a Feature
 
+<div style="text-align: justify;">
 Glad you asked. Powered by the latest in "please don’t sue us" technology, the AI generates documents that are:
+</div>
 
 | Feature                     | Description                                                                 |
 |-----------------------------|-----------------------------------------------------------------------------|
@@ -103,6 +122,7 @@ Glad you asked. Powered by the latest in "please don’t sue us" technology, the
 
 ## Example Outputs: Seeing is Believing
 
+<div style="text-align: justify;">
 Here’s a taste of what you can expect. Hint: It can be legally binding and slightly terrifying.
 
 ### **Privacy Policy**
@@ -113,11 +133,13 @@ Here’s a taste of what you can expect. Hint: It can be legally binding and sli
 
 ### **Contributor License Agreement (CLA)**
 > *"If you contribute code, it’s ours now. We’ll do whatever we want with it, including but not limited to: selling it, losing it, or using it to power our toaster. Thanks for the free labor!"*
+</div>
 
 ---
 
 ## Limitations: Or, "Why You Still Need a Lawyer"
 
+<div style="text-align: justify;">
 1. **This Isn’t Legal Advice**
    - The AI is smart, but it’s not *your* lawyer. It doesn’t know your business, your risks, or how much you’re willing to bet on "eh, close enough."
 
@@ -129,11 +151,13 @@ Here’s a taste of what you can expect. Hint: It can be legally binding and sli
 
 4. **You’re Still Responsible**
    - If you use this tool to generate a document and it turns out to be as legally binding as a handshake agreement, that’s on you.
+</div>
 
 ---
 
 ## Contributing: Even AI Need Friends
 
+<div style="text-align: justify;">
 Found a bug? Think the AI is trippin' on acid? Want to add support for more document types? Great! Here’s how to contribute without making me regret open-sourcing this:
 
 1. **Fork the Repo**
@@ -160,11 +184,13 @@ Found a bug? Think the AI is trippin' on acid? Want to add support for more docu
 - **No Malware**: If your PR includes code that mines Bitcoin on my CI, I *will* find you.
 
 *Disclaimer: I reserve the right to reject PRs that are boring, overly serious, or written in Comic Sans.*
+</div>
 
 ---
 
 ## Roadmap: What’s Next? Who Knows.
 
+<div style="text-align: justify;">
 Here’s what *might* happen in the future (no promises):
 
 - **Automated Jurisdiction Detection**: Because manually entering "[Jurisdiction]" is *so* 2023.
@@ -173,11 +199,13 @@ Here’s what *might* happen in the future (no promises):
 - **More Document Types** – Because why stop at boring legal docs? How about AI-generated cease-and-desist letters? *Too far?*
 - **Better Customization** – One size does *not* fit all.
 - **Integration with More AI Models** – Gemini is cool, but variety is the spice of life.
+</div>
 
 ---
 
 ## License: The Irony is Not Lost on Me
 
+<div style="text-align: justify;">
 This repo is licensed under the **MIT License**. Yes, it’s the one that says "do whatever you want, just don’t blame me." Irony is delicious.
 
 *(See? I do read my own templates.)*
@@ -191,21 +219,25 @@ Why **MIT**? Because:
 See [LICENSE](LICENSE) for the full text. *(tl;dr: It’s mostly just saying "don’t sue me.")*
 
 *Fun fact: The MIT License is shorter than most of the documents this thing generates. Coincidence? Probably.*
+</div>
 
 ---
 
 ## Support Needed?
 
+<div style="text-align: justify;">
 Need help? Found a bug? Want to suggest a feature? Here’s how to reach out:
 
 - **GitHub Issues**: [Open an issue](https://github.com/CassieMarie0728/repo-docs-writer/issues). Be descriptive. Include steps to reproduce. Don’t just say "it’s broken."
 - **Email**: `**Need Help?** Try turning it off and on again. If that fails, email [Contact Email](cmcrossno@gmail.com).
 - **Carrier Pigeon**: Not recommended, but if you’re into that sort of thing, knock yourself out.
+</div>
 
 ---
 
 ## FAQ: Questions No One Asked But I Answered Anyway
 
+<div style="text-align: justify;">
 #### **Q: Is this legally binding?**
 A: *Legally binding* is a strong term. Let’s go with *legally suggestive*. Always have a human lawyer review it. *Preferably one who doesn’t bill in Bitcoin.*
 
@@ -229,22 +261,26 @@ A: Because legal documents are already soul-crushingly boring. I figured I’d a
 
 #### **Q: What’s the worst that could happen?**
 A: You could accidentally write a clause that says "the user must forfeit their firstborn child to [Company Name]." So, you know, don’t do that.
+</div>
 
 ---
 
 ## Acknowledgements: Because Even Smartasses Have Heroes
 
+<div style="text-align: justify;">
 - **The Open Source Community**: For making it possible to build cool things without selling my soul.
 - **My Lawyers:** Who are probably reading this and shaking their heads. Hi, guys!
 - **TypeScript**: For saving me from JavaScript’s "everything is a string" hellscape.
 - **Google’s Gemini API**: For doing the heavy lifting so I don’t have to and for not crashing *every* time I ask it to generate a Privacy Policy.
 - **The lawyers who review this stuff**: May your coffee be strong and your billable hours plentiful.
 - **Red Bull**: The real MVP.
+</div>
 
 ---
 
 ## Final Thoughts: Why Are You Still Reading This?
 
+<div style="text-align: justify;">
 Look, I get it. Legal documents are boring. They’re confusing. They’re the asparagus of software development—you know you need them, but you’d rather eat a bowl of glue.
 
 BUT: **ignoring legal docs doesn’t make them go away**. It just makes them show up later when you’re least prepared, and end up having to explain to a judge why your Terms of Service includes a clause about "not summoning demons." (No judgment. We’ve all been there.)
@@ -252,12 +288,15 @@ BUT: **ignoring legal docs doesn’t make them go away**. It just makes them sho
 You’re now *slightly* more prepared to generate legal documents for your codebase. Whether that’s a good thing or a terrible idea remains to be seen. So use this tool. Generate your docs. Sleep a little easier knowing you didn’t just copy-paste something from a 2008 forum post.
 
 And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
+</div>
 
 ---
 
 ### Disclaimer: The Part Where I Cover My Own Ass(ets)
 
+<div style="text-align: justify;">
 **Disclaimer:** All documents are a starting template and should be reviewed by a qualified attorney before use. The authors, contributors, and maintainers of this repository are not responsible for any legal consequences arising from the use, misuse, or interpretation of the generated documents. This tool is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the tool or the use or other dealings in the tool. Basically, don’t be stupid, and if in doubt, hire a lawyer. I'm **not** a lawyer (unless you count the AI, and even then, it’s more of a "lawyer-adjacent" situation). Always have a real human lawyer review the output. They’ll charge you $500/hour to tell you I did a decent job. But use at your own risk. Void where prohibited. Batteries not included.
+</div>
 
 ---
 
@@ -269,6 +308,7 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
 
 <div align="center">
   <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTNzZmF4cXpyMDM0NHZrNWt6MXduMng3cGw4cmQ1c2o0YWI1a2R1eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/X1CHcPGCmO25fp4tyo/giphy.gif" width="200" />
+  <p><em>You got this.</em></p>
 </div>
 
 <div align="center">
