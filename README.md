@@ -10,7 +10,7 @@
 ## What Fresh Legal Hell Is This?
 
 <div style="text-align: justify;">
-You ever stare at a blank `LICENSE.md` file and think, *"I could write this myself, but do I really want to live in a world where I understand the difference between MIT and AGPL?"* No. No, you don’t.
+You ever stare at a blank `LICENSE.md` file and think, "I could write this myself, but do I really want to live in a world where I understand the difference between MIT and AGPL?" No. No, you don’t.
 
 Enter VOID: Repo Documents (**V**oice **O**f **I**ntense **D**isdain), the TypeScript-powered, AI-generated legal document factory that spits out the fine print so you don’t have to. This is where code meets legalese—without the billable hours or the condescending nods from people in suits.
 
