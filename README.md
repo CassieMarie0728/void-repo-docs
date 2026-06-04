@@ -29,7 +29,7 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 | **Contributor License Agreement** | Terms for contributors                                              | Because open source doesn’t mean "free for all."                                |
 | **Disclaimer**               | "We’re not responsible if this breaks your stuff"                       | CYA (Cover Your Assets).                                                        |
 | **Code of Conduct**          | Rules for community behavior                                            | Because even developers need to play nice.                                      |
-| **And more!**         |NDAs, Security Policies, Disclaimers...          | Because why stop at the bare minimum?)
+| **And more!**                | NDAs, Security Policies, Disclaimers...    | Because why stop at the bare minimum?)    |
 
 ---
 
@@ -268,8 +268,7 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
 </div>
 
 <div align="center">
-  <img src="https://media.giphy.com/media/l0HU7JyXB3vZzQpAI/giphy.gif" width="200" />
-  <p><em>You got this.</em></p>
+  <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTNzZmF4cXpyMDM0NHZrNWt6MXduMng3cGw4cmQ1c2o0YWI1a2R1eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/X1CHcPGCmO25fp4tyo/giphy.gif" width="200" />
 </div>
 
 <div align="center">
