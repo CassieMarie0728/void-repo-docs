@@ -352,3 +352,66 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
   <p><a href="https://void-repository-documents-320691612506.us-west2.run.app/">Visit the VOID</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs">Star This Repo</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs/issues">Report a Bug</a></p>
 
 </div>
+
+---
+
+## 📱 Building Android APK & AAB (NEW)
+
+Your app is now wrapped for Android using **Capacitor**. Here's how to build:
+
+### Prerequisites
+
+- **Android SDK** (API 34+) - Install via Android Studio
+- **Java JDK 17+** - [Download here](https://www.oracle.com/java/technologies/downloads/#java17)
+- **Environment Variables** set: `JAVA_HOME` and `ANDROID_SDK_ROOT`
+
+### Build Commands
+
+| Command                       | Output                     | Use Case                            |
+|-------------------------------|----------------------------|-------------------------------------|
+| `npm run android:apk`         | `app-debug.apk`            | Test on device/emulator             |
+| `npm run android:aab`         | `app-release.aab`          | **Upload to Google Play**           |
+| `npm run android:apk:release` | `app-release-unsigned.apk` | Direct distribution (needs signing) |
+| `npm run android:open`        | Opens Android Studio       | Edit Android project                |
+
+### Quick Start
+
+```bash
+# 1. Build debug APK (takes 5-10 minutes first time)
+npm run android:apk
+
+# 2. Install on device/emulator
+adb install android/app/build/outputs/apk/debug/app-debug.apk
+
+# 3. For Play Store: Generate keystore
+keytool -genkey -v -keystore void-repo-docs.jks -keyalg RSA -keysize 2048 -validity 10950
+
+# 4. Build App Bundle
+npm run android:aab
+
+# 5. Upload to Google Play Console
+# File: android/app/build/outputs/bundle/release/app-release.aab
+```
+
+### App Configuration
+
+- **Package ID:** `com.c728.voidrepodocs`
+- **App Name:** VOID Repo Docs
+- **Min API:** 24 (Android 7.0+)
+- **Target API:** 36 (Android 15)
+
+### Helper Scripts
+
+```bash
+# PowerShell
+.\build-android.ps1 debug    # Build debug APK
+.\build-android.ps1 aab      # Build App Bundle
+.\build-android.ps1 help     # Show help
+
+# Batch (Windows)
+build-android.bat debug
+build-android.bat aab
+```
+
+📖 **For detailed instructions:** See [`ANDROID_BUILD_GUIDE.md`](ANDROID_BUILD_GUIDE.md)
+

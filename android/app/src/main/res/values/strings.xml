@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VOID Repo Docs</string>
+    <string name="title_activity_main">VOID Repo Docs</string>
+    <string name="package_name">com.c728.voidrepodocs</string>
+    <string name="custom_url_scheme">com.c728.voidrepodocs</string>
+</resources>
