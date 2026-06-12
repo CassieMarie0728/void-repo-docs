@@ -31,6 +31,29 @@ function getGeminiClient() {
 const app = express();
 const PORT = 3000;
 
+const allowedOrigins = new Set([
+  "http://localhost",
+  "https://localhost",
+  "capacitor://localhost",
+  process.env.APP_URL,
+].filter((origin): origin is string => Boolean(origin)));
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
 app.use(express.json());
 
 // Zod schema for validation

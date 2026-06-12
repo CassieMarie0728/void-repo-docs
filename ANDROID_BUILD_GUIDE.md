@@ -34,6 +34,9 @@ On Windows, the npm Android commands automatically detect Android Studio's bundl
 default SDK at `%LOCALAPPDATA%\Android\Sdk`. Set the environment variables only when using
 non-standard installation paths.
 
+Native builds call the production Cloud Run API by default. Set `VITE_API_BASE_URL` before building
+to target a different deployed backend. A local Express server is not embedded in the APK.
+
 ## Quick Start Commands
 
 ### 1. Build Debug APK (Testing)

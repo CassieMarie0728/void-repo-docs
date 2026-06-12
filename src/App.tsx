@@ -55,7 +55,7 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { DocumentType, Tone, Length, TargetPlatform, GenRequest, GenResponse } from "./types";
-import axios from "axios";
+import { apiClient } from "./api";
 import { NotionExportDialog } from "./components/NotionExportDialog";
 import { DiffViewer } from "./components/DiffViewer";
 import { ComplianceAudit } from "./components/ComplianceAudit";
@@ -432,7 +432,7 @@ export default function App() {
     setIsRefining(true);
 
     try {
-      const response = await axios.post<{ markdown: string }>("/api/refine", {
+      const response = await apiClient.post<{ markdown: string }>("/api/refine", {
         markdown: editedMarkdown,
         instruction: finalInstruction,
         tone: tone,
@@ -506,7 +506,7 @@ export default function App() {
     setResult(null);
 
     try {
-      const response = await axios.post<GenResponse>("/api/generate", {
+      const response = await apiClient.post<GenResponse>("/api/generate", {
         repoUrl,
         docType,
         tone,
