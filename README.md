@@ -35,7 +35,7 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 | **Contributor License Agreement** | Terms for contributors | Because open source doesn’t mean "free for all." |
 | **Disclaimer** | "We’re not responsible if this breaks your stuff" | CYA (Cover Your Assets). |
 | **Code of Conduct** | Rules for community behavior | Because even developers need to play nice. |
-| **And more!** | NDAs, Security Policies, Disclaimers... | Because why stop at the bare minimum?) |
+| **And more!** | NDAs, Security Policies, Disclaimers... | Because why stop at the bare minimum? |
 
 ---
 
@@ -248,7 +248,7 @@ See [LICENSE](LICENSE) for the full text. *(tl;dr: It’s mostly just saying "do
 Need help? Found a bug? Want to suggest a feature? Here’s how to reach out:
 
 - **GitHub Issues**: [Open an issue](https://github.com/CassieMarie0728/repo-docs-writer/issues). Be descriptive. Include steps to reproduce. Don’t just say "it’s broken."
-- **Email**: **Need Help?** Try turning it off and on again. If that fails, email me [here](mailto:cmcrossno@gmail.com).
+- **Email**: **Need Help?** Try turning it off and on again. If that fails, email [Contact Email](mailto:cmcrossno@gmail.com).
 - **Carrier Pigeon**: Not recommended, but if you’re into that sort of thing, knock yourself out.
 
 </div>
@@ -337,12 +337,13 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
 
 <div align="center">
   <p><em>Happy documenting! May your legal docs be ever in your favor.</em></p>
-  <p>Now go forth and generate some legal documents. And remember: <em>The best way to avoid legal trouble is to not get caught.</em> (Kidding. Please don’t <strong>@</strong> me.)</p>
+  <p>Now go forth and generate some legal docs. And remember: <em>The best way to avoid legal trouble is to not get caught.</em> (Kidding. Please don’t <strong>@</strong> me.)</p>
+
 </div>
 
 <div align="center">
   <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTNzZmF4cXpyMDM0NHZrNWt6MXduMng3cGw4cmQ1c2o0YWI1a2R1eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/X1CHcPGCmO25fp4tyo/giphy.gif" width="200" />
-  <p><em>And if anyone asks, <strong>we never met</em>.</p>
+  <p><em>And if anyone asks, <strong>we never met</strong>.</em></p>
 
 </div>
 
