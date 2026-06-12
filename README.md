@@ -25,6 +25,26 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 
 ---
 
+## Product Showcase
+
+[Watch the feature showcase video](assets/showcase/void-repo-docs-showcase.webm)
+
+### Desktop Workspace
+
+![VOID Repo Docs desktop workspace](assets/showcase/desktop-workspace.png)
+
+### Mobile Workspace
+
+On phones, both side panels start minimized. Header controls open navigation or configuration as
+overlay drawers, leaving the document workspace full-width.
+
+| Full-width document view | Configuration drawer |
+|--------------------------|----------------------|
+| ![Mobile document workspace](assets/showcase/mobile-workspace.png) | ![Mobile configuration drawer](assets/showcase/mobile-configuration-drawer.png) |
+
+The desktop diff comparison is also available at
+[`assets/showcase/desktop-diff.png`](assets/showcase/desktop-diff.png).
+
 ## Here’s What You Can Generate With VOID Repo Docs:
 
 | Document | Purpose | Why You Need It |

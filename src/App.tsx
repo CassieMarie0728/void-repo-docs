@@ -267,8 +267,15 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<GenResponse | null>(null);
   const [copied, setCopied] = useState(false);
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isMobileLayout, setIsMobileLayout] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(
+    () => typeof window === "undefined" || !window.matchMedia("(max-width: 767px)").matches
+  );
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(
+    () => typeof window === "undefined" || !window.matchMedia("(max-width: 767px)").matches
+  );
 
   // Live Editor & Auto-Save States
   const [editedMarkdown, setEditedMarkdown] = useState<string>("");
@@ -289,6 +296,41 @@ export default function App() {
   const [isRefining, setIsRefining] = useState(false);
   const [placeholderReplacements, setPlaceholderReplacements] = useState<Record<string, string>>({});
   const [history, setHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const handleLayoutChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobileLayout(event.matches);
+      if (event.matches) {
+        setIsLeftSidebarOpen(false);
+        setIsRightSidebarOpen(false);
+      }
+    };
+
+    handleLayoutChange(mediaQuery);
+    mediaQuery.addEventListener("change", handleLayoutChange);
+    return () => mediaQuery.removeEventListener("change", handleLayoutChange);
+  }, []);
+
+  const toggleLeftSidebar = () => {
+    setIsLeftSidebarOpen((isOpen) => {
+      const nextOpen = !isOpen;
+      if (nextOpen && isMobileLayout) {
+        setIsRightSidebarOpen(false);
+      }
+      return nextOpen;
+    });
+  };
+
+  const toggleRightSidebar = () => {
+    setIsRightSidebarOpen((isOpen) => {
+      const nextOpen = !isOpen;
+      if (nextOpen && isMobileLayout) {
+        setIsLeftSidebarOpen(false);
+      }
+      return nextOpen;
+    });
+  };
 
   // Load previous draft on initial render
   useEffect(() => {
@@ -695,21 +737,50 @@ ${htmlContent}
     <div className="flex h-screen bg-brand-bg text-brand-text overflow-hidden selection:bg-brand-accent/30 selection:text-white">
       <Toaster position="top-right" theme="dark" />
 
+      <AnimatePresence>
+        {isMobileLayout && (isLeftSidebarOpen || isRightSidebarOpen) && (
+          <motion.button
+            type="button"
+            aria-label="Close open menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              setIsLeftSidebarOpen(false);
+              setIsRightSidebarOpen(false);
+            }}
+            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar: Navigation & Personality */}
       <AnimatePresence initial={false}>
         {isLeftSidebarOpen && (
           <motion.aside 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 256, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            className="bg-brand-sidebar border-r border-brand-border flex flex-col shrink-0 overflow-hidden"
+            initial={isMobileLayout ? { x: "-100%", opacity: 0 } : { width: 0, opacity: 0 }}
+            animate={isMobileLayout ? { x: 0, opacity: 1 } : { width: 256, opacity: 1 }}
+            exit={isMobileLayout ? { x: "-100%", opacity: 0 } : { width: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 flex-col overflow-hidden border-r border-brand-border bg-brand-sidebar shadow-2xl md:relative md:inset-auto md:z-auto md:w-auto md:shadow-none"
           >
-            <div className="p-8 w-64">
-              <div className="text-3xl font-serif italic text-white tracking-tighter mb-1">VOID.</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-brand-accent font-bold opacity-80">Voice Of Intense Disdain</div>
+            <div className="flex w-full items-start justify-between p-6 md:w-64 md:p-8">
+              <div>
+                <div className="text-3xl font-serif italic text-white tracking-tighter mb-1">VOID.</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-brand-accent font-bold opacity-80">Voice Of Intense Disdain</div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsLeftSidebarOpen(false)}
+                aria-label="Close navigation menu"
+                className="h-9 w-9 text-brand-muted hover:text-brand-accent md:hidden"
+              >
+                <PanelLeftClose className="h-5 w-5" />
+              </Button>
             </div>
             
-            <nav className="flex-1 px-4 space-y-2 mt-4 w-64">
+            <nav className="mt-4 w-full flex-1 space-y-2 px-4 md:w-64">
               <div className="p-3 bg-white/5 rounded text-white flex items-center gap-3 border-l-2 border-brand-accent">
                 <span className="text-xs opacity-50 mono-text">01</span>
                 <span className="text-sm font-medium">New Disappointment</span>
@@ -724,7 +795,7 @@ ${htmlContent}
               </div>
             </nav>
 
-            <div className="p-6 border-t border-brand-border w-64">
+            <div className="w-full border-t border-brand-border p-6 md:w-64">
               <div className="bg-black/40 p-4 rounded-lg border border-brand-border">
                 <p className="text-[11px] leading-relaxed text-brand-muted italic font-serif">
                   "I'm currently calculating exactly how many lawyers will laugh at your Terms of Service."
@@ -736,32 +807,36 @@ ${htmlContent}
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col border-r border-brand-border h-full relative overflow-hidden bg-[#080808]">
-        <header className="h-20 border-b border-brand-border flex items-center justify-between px-8 shrink-0">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-              className="text-brand-muted hover:text-brand-accent transition-colors"
+      <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden border-r border-brand-border bg-[#080808]">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-brand-border px-3 sm:px-5 md:h-20 md:px-8">
+          <div className="flex min-w-0 items-center gap-2 md:gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleLeftSidebar}
+              aria-label={isLeftSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+              className="shrink-0 text-brand-muted hover:text-brand-accent transition-colors"
             >
               {isLeftSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
             </Button>
-            <h2 className="text-xs font-bold text-brand-muted uppercase tracking-widest">Active Session: {result ? "A Rare Success" : "Waiting for Mediocrity"}</h2>
+            <h2 className="truncate text-[9px] font-bold uppercase tracking-wider text-brand-muted sm:text-xs sm:tracking-widest">
+              Active Session: {result ? "A Rare Success" : "Waiting for Mediocrity"}
+            </h2>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
-            <span className="text-[10px] text-brand-muted mono-text uppercase tracking-tighter">Online (Regrettably)</span>
-            {!isRightSidebarOpen && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsRightSidebarOpen(true)}
-                className="text-brand-muted hover:text-brand-accent transition-colors ml-4"
-              >
-                <PanelRightOpen className="w-5 h-5" />
-              </Button>
-            )}
+          <div className="flex shrink-0 items-center gap-2 md:gap-4">
+            <div className="hidden items-center gap-3 sm:flex">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+              <span className="hidden text-[10px] text-brand-muted mono-text uppercase tracking-tighter lg:inline">Online (Regrettably)</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleRightSidebar}
+              aria-label={isRightSidebarOpen ? "Close configuration menu" : "Open configuration menu"}
+              className="shrink-0 text-brand-muted hover:text-brand-accent transition-colors"
+            >
+              {isRightSidebarOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+            </Button>
           </div>
         </header>
 
@@ -1127,10 +1202,11 @@ ${htmlContent}
       <AnimatePresence initial={false}>
         {isRightSidebarOpen && (
           <motion.aside 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 320, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            className="bg-brand-config flex flex-col shrink-0 overflow-hidden border-l border-brand-border h-full"
+            initial={isMobileLayout ? { x: "100%", opacity: 0 } : { width: 0, opacity: 0 }}
+            animate={isMobileLayout ? { x: 0, opacity: 1 } : { width: 320, opacity: 1 }}
+            exit={isMobileLayout ? { x: "100%", opacity: 0 } : { width: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-y-0 right-0 z-50 flex h-full w-[min(22rem,92vw)] shrink-0 flex-col overflow-hidden border-l border-brand-border bg-brand-config shadow-2xl md:relative md:inset-auto md:z-auto md:w-auto md:shadow-none"
           >
             {/* Header Tabs Block */}
             <div className="h-14 border-b border-brand-border flex items-center justify-between px-6 bg-black/40 shrink-0 select-none">
@@ -1178,6 +1254,7 @@ ${htmlContent}
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsRightSidebarOpen(false)}
+                aria-label="Close configuration menu"
                 className="text-brand-muted hover:text-brand-accent transition-colors h-8 w-8"
               >
                 <PanelRightClose className="w-4 h-4" />
