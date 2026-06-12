@@ -1,0 +1,14 @@
+# Repository ownership rules for VOID Repo Docs.
+# GitHub will request review from this owner when protected branch rules require code-owner review.
+
+* @CassieMarie0728
+
+# Lock down high-impact repo plumbing extra hard.
+.github/ @CassieMarie0728
+.github/workflows/ @CassieMarie0728
+package.json @CassieMarie0728
+package-lock.json @CassieMarie0728
+pnpm-lock.yaml @CassieMarie0728
+yarn.lock @CassieMarie0728
+tsconfig*.json @CassieMarie0728
+server.ts @CassieMarie0728
