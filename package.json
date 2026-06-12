@@ -8,10 +8,22 @@
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "cap:sync": "npx cap sync android",
+    "cap:copy": "npx cap copy android",
+    "android:gradle": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/android-gradle.ps1",
+    "android:build": "npm run build && npx cap sync android && npm run android:gradle -- build",
+    "android:apk": "npm run build && npx cap sync android && npm run android:gradle -- assembleDebug",
+    "android:apk:release": "npm run build && npx cap sync android && npm run android:gradle -- assembleRelease",
+    "android:aab": "npm run build && npx cap sync android && npm run android:gradle -- bundleRelease",
+    "android:clean": "npm run android:gradle -- clean",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@google/genai": "^2.8.0",
     "@tailwindcss/vite": "^4.1.14",

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  Github, 
-  FileText, 
+  GitBranch,
+  FileText,
   Type, 
   Ruler, 
   Download, 
@@ -55,7 +55,7 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { DocumentType, Tone, Length, TargetPlatform, GenRequest, GenResponse } from "./types";
-import axios from "axios";
+import { apiClient } from "./api";
 import { NotionExportDialog } from "./components/NotionExportDialog";
 import { DiffViewer } from "./components/DiffViewer";
 import { ComplianceAudit } from "./components/ComplianceAudit";
@@ -432,7 +432,7 @@ export default function App() {
     setIsRefining(true);
 
     try {
-      const response = await axios.post<{ markdown: string }>("/api/refine", {
+      const response = await apiClient.post<{ markdown: string }>("/api/refine", {
         markdown: editedMarkdown,
         instruction: finalInstruction,
         tone: tone,
@@ -506,7 +506,7 @@ export default function App() {
     setResult(null);
 
     try {
-      const response = await axios.post<GenResponse>("/api/generate", {
+      const response = await apiClient.post<GenResponse>("/api/generate", {
         repoUrl,
         docType,
         tone,
@@ -1450,7 +1450,7 @@ ${htmlContent}
                         )}
                       </div>
                       <div className="relative group">
-                        <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 group-focus-within:opacity-100 transition-opacity" />
+                        <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 group-focus-within:opacity-100 transition-opacity" />
                         <Input 
                           placeholder={targetPlatform === TargetPlatform.GithubRepo ? "Target repository..." : "Codebase repo for scanning (optional)..."}
                           className="pl-9 h-10 bg-black/60 border-brand-border focus:border-brand-accent/50 text-xs font-mono rounded"

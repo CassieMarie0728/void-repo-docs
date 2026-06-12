@@ -19,7 +19,7 @@ import {
   Loader2, 
   Sparkles
 } from "lucide-react";
-import axios from "axios";
+import { apiClient } from "../api";
 
 interface NotionExportDialogProps {
   markdown: string;
@@ -78,7 +78,7 @@ export function NotionExportDialog({ markdown, docType, repoUrl }: NotionExportD
     localStorage.setItem("void_notion_page_id", cleanPageId);
 
     try {
-      const response = await axios.post<{ success: boolean; url: string }>("/api/export-notion", {
+      const response = await apiClient.post<{ success: boolean; url: string }>("/api/export-notion", {
         token: cleanToken,
         parentPageId: cleanPageId,
         title: title.trim(),
