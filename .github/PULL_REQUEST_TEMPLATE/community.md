@@ -18,5 +18,3 @@ _What this PR does and why. Reviewers should be able to understand the change wi
 
 ## Breaking changes
 _Only fill in if this PR introduces a breaking change. Describe the migration path._
-
-<sub>* Required sections — Moxie will flag if missing on alignment.</sub>
