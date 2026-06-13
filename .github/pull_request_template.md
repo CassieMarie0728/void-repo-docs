@@ -11,5 +11,3 @@ _What problem does this solve, and for whom?_
 
 ## Follow-ups
 - [ ] (add follow-up tasks here)
-
-<sub>* Required sections — Moxie will flag if missing on alignment.</sub>
