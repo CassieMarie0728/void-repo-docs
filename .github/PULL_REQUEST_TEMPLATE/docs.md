@@ -11,5 +11,3 @@ _What changed and where it lives now._
 - [ ] Links resolve
 - [ ] No stale screenshots
 - [ ] Examples still run
-
-<sub>* Required sections — Moxie will flag if missing on alignment.</sub>
