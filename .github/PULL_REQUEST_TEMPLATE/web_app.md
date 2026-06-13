@@ -19,5 +19,3 @@ _Blast radius, feature flag, and how to revert if needed._
 
 ## Follow-ups
 - [ ] (add follow-up tasks here)
-
-<sub>* Required sections — Moxie will flag if missing on alignment.</sub>
