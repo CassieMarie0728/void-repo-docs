@@ -4,6 +4,7 @@ dist/
 coverage/
 .idea/
 *.iml
+.codex-remote-attachments/
 .DS_Store
 *.log
 .env*

@@ -10,5 +10,3 @@ _Steps a reviewer can run to confirm the fix._
 ## Regression check
 - [ ] Added a test
 - [ ] Tested affected flows manually
-
-<sub>* Required sections — Moxie will flag if missing on alignment.</sub>

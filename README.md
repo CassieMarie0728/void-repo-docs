@@ -58,7 +58,7 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 <div align="justify">
 
 1. **Codebase-specific Documentation** 
-   - Generic legal templates are for cowards. This thing tailors docs to *your* project. Open-source library? SaaS platform? Personal blog about your cat’s existential crisis? I’ve got you covered *AND* because one size fits all is a lie perpetuated by sock manufacturers. 
+   - Generic legal templates are for cowards. This thing tailors docs to *your* project. Open-source library? SaaS platform? Personal blog about your cat’s existential crisis? I’ve got you covered.
 
 2. **You’re Not a Lawyer** (Or are you?)
    - If you *are* a lawyer, congrats on slumming it with us peasants. Aren't you supposed to be billing someone $800/hour?
@@ -248,7 +248,7 @@ See [LICENSE](LICENSE) for the full text. *(tl;dr: It’s mostly just saying "do
 Need help? Found a bug? Want to suggest a feature? Here’s how to reach out:
 
 - **GitHub Issues**: [Open an issue](https://github.com/CassieMarie0728/repo-docs-writer/issues). Be descriptive. Include steps to reproduce. Don’t just say "it’s broken."
-- **Email**: **Need Help?** Try turning it off and on again. If that fails, email [Contact Email](mailto:cmcrossno@gmail.com).
+- **Email**: **Need Help?** Try turning it off and on again. If that fails, email me [here](mailto:cmcrossno@gmail.com).
 - **Carrier Pigeon**: Not recommended, but if you’re into that sort of thing, knock yourself out.
 
 </div>
@@ -352,5 +352,3 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
   <p><a href="https://void-repository-documents-320691612506.us-west2.run.app/">Visit the VOID</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs">Star This Repo</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs/issues">Report a Bug</a></p>
 
 </div>
-
----
