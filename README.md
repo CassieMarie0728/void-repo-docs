@@ -84,12 +84,15 @@ This repository is your one-stop shop for generating codebase-specific legal doc
 1. **Pick Your Poison**
    - Select the type of document you need (e.g., "Privacy Policy," "MIT License," "Apology Letter to Your Users After a Data Breach").
 
+*(Words of wisdom: If you’re not sure what you need, just generate all of them. Better to have it and not need it than to need it and not have it. Or so I’ve been told.)*
+
 2. **Generate and Pray**
    - Hit the "Generate" button and watch the AI work its magic. Or its "magic." Hard to tell sometimes.
 
 3. **Review Like Your Lawyer’s Watching**
    - Read the output. If it looks like it was written by a human (or a very convincing robot), congrats! You’re 80% of the way to not getting sued.
-   - If it looks like gibberish, try again.
+     - Does it match your project? If you’re building a to-do app but the document keeps talking about "plans for world domination," you might want to regenerate.
+     - Are the blanks filled in? Nothing says "professional" like a Privacy Policy that still says [INSERT COMPANY NAME HERE].
 
 5. **Deploy to Your Repo**
    - Copy the generated document into your project.
