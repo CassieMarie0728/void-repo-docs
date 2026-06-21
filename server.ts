@@ -80,7 +80,19 @@ const genSchema = z.object({
   authProvider: z.string().max(50).optional(),
   packageName: z.string().max(100).optional(),
   androidPermissions: z.array(z.string()).optional(),
-  monetizationServices: z.array(z.string()).optional()
+  monetizationServices: z.array(z.string()).optional(),
+
+  // Automated Badge Inserter Settings
+  badgeSettings: z.object({
+    buildStatus: z.boolean().optional(),
+    licenseType: z.boolean().optional(),
+    latestVersion: z.boolean().optional(),
+    githubStars: z.boolean().optional(),
+    githubIssues: z.boolean().optional(),
+    sarcasmLevel: z.boolean().optional(),
+    bugCount: z.boolean().optional(),
+    deadpoolApproved: z.boolean().optional()
+  }).optional()
 });
 
 // Helper to extract owner and repo from URL
@@ -90,6 +102,107 @@ function parseGitHubUrl(url: string) {
   if (!match) return null;
   return { owner: match[1], repo: match[2] };
 }
+
+// Helper to insert active badges into generated README documents
+function insertBadges(markdown: string, validated: any): string {
+  // Only apply to README documents
+  if (validated.docType !== DocumentType.Readme) {
+    return markdown;
+  }
+
+  const settings = validated.badgeSettings;
+  if (!settings) return markdown;
+
+  // Check if any badge is enabled
+  const {
+    buildStatus,
+    licenseType,
+    latestVersion,
+    githubStars,
+    githubIssues,
+    sarcasmLevel,
+    bugCount,
+    deadpoolApproved
+  } = settings;
+
+  const hasAny = buildStatus || licenseType || latestVersion || githubStars || githubIssues || sarcasmLevel || bugCount || deadpoolApproved;
+  if (!hasAny) return markdown;
+
+  const githubInfo = validated.repoUrl ? parseGitHubUrl(validated.repoUrl) : null;
+  const owner = githubInfo?.owner || "owner";
+  const repo = githubInfo?.repo || "repo";
+
+  const badgesList: string[] = [];
+
+  if (buildStatus) {
+    if (githubInfo) {
+      badgesList.push(`[![Build Status](https://img.shields.io/github/actions/workflow/status/${owner}/${repo}/ci.yml?branch=main&style=flat-square)](https://github.com/${owner}/${repo}/actions)`);
+    } else {
+      badgesList.push(`[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](#)`);
+    }
+  }
+
+  if (licenseType) {
+    if (githubInfo) {
+      badgesList.push(`[![License](https://img.shields.io/github/license/${owner}/${repo}?style=flat-square)](https://github.com/${owner}/${repo})`);
+    } else {
+      badgesList.push(`[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#)`);
+    }
+  }
+
+  if (latestVersion) {
+    if (githubInfo) {
+      badgesList.push(`[![Latest Version](https://img.shields.io/github/v/release/${owner}/${repo}?style=flat-square)](https://github.com/${owner}/${repo}/releases)`);
+    } else {
+      badgesList.push(`[![Latest Version](https://img.shields.io/badge/version-1.0.0-orange?style=flat-square)](#)`);
+    }
+  }
+
+  if (githubStars && githubInfo) {
+    badgesList.push(`[![GitHub Stars](https://img.shields.io/github/stars/${owner}/${repo}?style=flat-square)](https://github.com/${owner}/${repo}/stargazers)`);
+  }
+
+  if (githubIssues && githubInfo) {
+    badgesList.push(`[![GitHub Issues](https://img.shields.io/github/issues/${owner}/${repo}?style=flat-square)](https://github.com/${owner}/${repo}/issues)`);
+  }
+
+  if (sarcasmLevel) {
+    badgesList.push(`[![Sarcasm Level](https://img.shields.io/badge/sarcasm-100%25-ff69b4?style=flat-square)](#)`);
+  }
+
+  if (bugCount) {
+    badgesList.push(`[![Bug Count](https://img.shields.io/badge/bugs-uncountable-critical?style=flat-square)](#)`);
+  }
+
+  if (deadpoolApproved) {
+    badgesList.push(`[![Deadpool Approved](https://img.shields.io/badge/deadpool-approved-red?style=flat-square)](#)`);
+  }
+
+  if (badgesList.length === 0) return markdown;
+
+  const badgesMarkdown = badgesList.join(" ");
+
+  // Find the first markdown header line to insert below it
+  const lines = markdown.split("\n");
+  let headerIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim().startsWith("# ")) {
+      headerIndex = i;
+      break;
+    }
+  }
+
+  if (headerIndex !== -1) {
+    // Insert after the title header line
+    lines.splice(headerIndex + 1, 0, "", badgesMarkdown);
+    return lines.join("\n");
+  } else {
+    // Prepend if no H1 is found
+    return badgesMarkdown + "\n\n" + markdown;
+  }
+}
+
 
 // GitHub API Client
 async function fetchRepoInfo(owner: string, repo: string) {
@@ -297,10 +410,22 @@ Length Target: ${lengthInstruction}
 ${platformInstructions}
 
 IMPORTANT RULES:
-1. Output ONLY the Markdown document. Do NOT output any introductory chatter, preambles, or post-generation notes. Start directly with the first header.
+1. Output ONLY the Markdown document/notice. Do NOT output any introductory chatter, preambles, or post-generation notes. Start directly with the first header.
 2. Do not invent unverifiable facts (addresses, company names, legal jurisdictions). Use placeholders like [Contact Email], [Company Name], [Jurisdiction], [Effective Date].
 3. Maintain the requested tone profile exhaustively throughout the entire text. It is a critical failure to drift back to standard corporate AI style.
 4. Include a disclaimer at the bottom stating: "Disclaimer: This document is a starting template and should be reviewed by a qualified attorney before use."
+5. PROJECT-CENTRIC GENERATION:
+   - Generate all documents based on the actual application/software PROJECT itself (i.e., its features, business logic, system architecture, database design, target audience, and installation/operational footprint).
+   - DO NOT focus on Git repository wrapper details (such as lists of commits, PR workflows, branches, or repository metadata) unless specifically requested by document types like CODEOWNERS or CI_CD_DOCUMENTATION.md. Treat the software as a production-ready system/SaaS product rather than just a code repo folder.
+6. DYNAMIC RELEVANCY AUDITING (CRITICAL ENFORCEMENT):
+   - Before generating the requested document, perform a strict relevancy check of the requested document type ("${validated.docType}") against the REPOSITORY/APP CONTEXT.
+   - If the requested document type is NOT structurally relevant to the actual project (for example, requesting a 'MODEL_CARD.md', 'BIAS_AND_FAIRNESS.md', 'DATASET_CARD.md', 'TRAINING.md', 'EVALUATION.md', 'PROMPT_ENGINEERING.md', or 'INFERENCE.md' for a project that has absolutely NO machine learning, AI, LLMs, neural networks, or data science features; or requesting a 'CITATIONS.cff' for a standard commercial or consumer app with no academic/research background), YOU MUST NOT make up or hallucinate a fake document with dummy metrics or fictional training configurations.
+   - INSTEAD of a hallucinated document, you MUST generate a "Document Relevancy Notice" explaining clearly why this document type is not relevant to their current project.
+   - This notice MUST be generated in the EXACT requested tone ("${validated.tone}"):
+     * For Deadpool-cool: Make it highly sarcastic, breaking the fourth wall, hilariously mocking the request (e.g., asking why they want AI model training logs or academic citations for a standard web app, database, or API), while still explaining wittily what projects actually need this document.
+     * For Formal/Professional: Issue a structured, highly dignified, respectful business notice notifying the developer that their project lacks AI model components or academic research metrics, and explaining what criteria would necessitate this document.
+     * For Friendly/Casual/Laid-back: Issue a warm, cozy, or clear friendly notice explaining that this document is not applicable to the current codebase and why, and inviting them to add features that would make it meaningful.
+   - The output for an irrelevant document MUST start with a clear main markdown header like "# Document Relevancy Notice: ${validated.docType}" or equivalent. Do NOT output any introductory chatter or post-generation notes.
 
 ${toneInstructions}
 
@@ -477,8 +602,9 @@ Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash 
           markdown = groqResponse.data.choices[0].message.content;
         }
 
+        const processedMarkdown = insertBadges(markdown, validated);
         const provenance = `<!--\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nDraft Version: ${idx + 1} of ${versionCount}\nGenerated: ${new Date().toISOString()}\nProvider: ${activeProvider.toUpperCase()}${usedModel ? ` (${usedModel})` : ""}\n-->\n\n`;
-        return provenance + markdown;
+        return provenance + processedMarkdown;
       });
 
       const markdowns = await Promise.all(requests);
