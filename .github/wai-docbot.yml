@@ -1,0 +1,466 @@
+# ============================================================================
+# WODEN DOCBOT CONFIGURATION — VOID REPO DOCS
+# ============================================================================
+#
+# Repository:
+# https://github.com/cassiemarie0728/void-repo-docs
+#
+# File location:
+# .github/wai-docbot.yml
+#
+# VOID Repo Docs is an AI-powered, codebase-aware legal and compliance
+# document generator built with React, TypeScript, Vite, Express, and
+# Capacitor for Android.
+# ============================================================================
+
+
+# ============================================================================
+# OUTPUT MODE
+# ============================================================================
+
+# Generate one README for each changed directory.
+#
+# This gives related files shared architectural context without generating
+# a tiny README for every individual source file.
+#
+# Available values:
+#   directory - One README per changed directory
+#   file      - One README per changed file
+#   both      - Generate both formats at a higher token cost
+
+output_mode: "directory"
+
+
+# ============================================================================
+# PER-DIRECTORY OVERRIDES
+# ============================================================================
+
+# Paths are matched exactly. Wildcards are not supported.
+#
+# Supported diagram types:
+#   auto
+#   class_hierarchy
+#   state_machine
+#   data_model
+#   sequence
+#   component_dependency
+#   module_relationship
+#   none
+
+directory_overrides:
+
+  # Main React application, API client, shared types, styles, and entry point
+  - path: "src"
+    diagram_type: "component_dependency"
+
+  # Feature-level React components:
+  # compliance auditing, diff viewing, glossary, and Notion export
+  - path: "src/components"
+    diagram_type: "component_dependency"
+
+  # Shared shadcn-style interface primitives
+  - path: "components"
+    diagram_type: "component_dependency"
+
+  - path: "components/ui"
+    diagram_type: "component_dependency"
+
+  # Shared TypeScript utilities
+  - path: "lib"
+    diagram_type: "module_relationship"
+
+  # Build and Android automation scripts
+  - path: "scripts"
+    diagram_type: "sequence"
+
+  # Capacitor Android wrapper and Gradle project
+  - path: "android"
+    diagram_type: "component_dependency"
+
+  - path: "android/app"
+    diagram_type: "module_relationship"
+
+  # Native Android entry point and application manifest
+  - path: "android/app/src/main"
+    diagram_type: "component_dependency"
+
+  - path: "android/app/src/main/java/com/c728/voidrepodocs"
+    diagram_type: "class_hierarchy"
+
+  # Generated Android resources contain little useful architecture context
+  - path: "android/app/src/main/res"
+    skip_readme: true
+
+  # Boilerplate Capacitor tests do not need generated READMEs
+  - path: "android/app/src/test"
+    skip_readme: true
+
+  - path: "android/app/src/androidTest"
+    skip_readme: true
+
+  # Static branding and showcase media do not need documentation
+  - path: "assets"
+    skip_readme: true
+
+  - path: "assets/showcase"
+    skip_readme: true
+
+
+# ============================================================================
+# DOCUMENTATION OUTPUT FOLDER
+# ============================================================================
+
+# Woden-generated documentation will be written beneath this directory.
+#
+# VOID already contains a hand-authored docs/ directory. Using _docs keeps
+# generated output separate from manually maintained documentation.
+
+docs_folder: "_docs"
+
+
+# ============================================================================
+# BRANCH FILTERING
+# ============================================================================
+
+# DocBot only processes pull requests targeting these branches.
+
+allowed_base_branches:
+
+  # Primary repository branch
+  - "main"
+
+  # Optional future development branch
+  - "develop"
+
+  # Versioned release branches
+  - "release/*"
+
+  # Emergency repair branches
+  - "hotfix/*"
+
+  # Special Woden branch for full documentation rebuilds
+  - "wai-docs-update"
+
+
+# ============================================================================
+# DOCUMENTATION PREFERENCES
+# ============================================================================
+
+preferences:
+
+  # Link generated documentation to relevant source locations
+  include_code_links: true
+
+  # Include API, component, configuration, and workflow examples
+  include_examples: true
+
+  # Require human approval before generated documentation is accepted
+  require_pr_approval: true
+
+  # Document important root-level files such as server.ts,
+  # capacitor.config.ts, and vite.config.ts
+  document_root_files: true
+
+
+# ============================================================================
+# ARCHITECTURE GUIDE GENERATION
+# ============================================================================
+
+guide_projects:
+
+  - name: "void-repo-docs-architecture"
+    path: "."
+    purpose: >-
+      Document the complete architecture and runtime behavior of VOID Repo Docs,
+      including the React application, Express API server, repository-context
+      collection through GitHub, Zod request validation, prompt construction,
+      AI-provider routing and fallback behavior, legal and compliance document
+      generation, draft editing and refinement, localStorage persistence,
+      Markdown rendering, compliance auditing, diff generation, Notion export,
+      Vite and esbuild production builds, Capacitor Android packaging, security
+      boundaries, external API integrations, deployment, and error handling.
+    patterns: []
+
+
+# ============================================================================
+# FILE EXTENSION INCLUSION LIST
+# ============================================================================
+
+# Only files with these extensions will be analyzed.
+#
+# This list reflects the files and technologies actually present in
+# VOID Repo Docs.
+
+include_extensions:
+
+  # TypeScript and React
+  - ".ts"
+  - ".tsx"
+  - ".mts"
+  - ".cts"
+
+  # JavaScript module support
+  - ".js"
+  - ".jsx"
+  - ".mjs"
+  - ".cjs"
+
+  # Web entry points and styles
+  - ".html"
+  - ".css"
+
+  # Structured configuration and metadata
+  - ".json"
+  - ".jsonc"
+  - ".yaml"
+  - ".yml"
+
+  # Android native source and resources
+  - ".java"
+  - ".xml"
+  - ".gradle"
+  - ".properties"
+  - ".pro"
+
+  # PowerShell and Windows build automation
+  - ".ps1"
+  - ".bat"
+
+  # Project IDX and Nix development environment
+  - ".nix"
+
+
+# ============================================================================
+# FILE AND DIRECTORY EXCLUSIONS
+# ============================================================================
+
+exclude:
+
+  # --------------------------------------------------------------------------
+  # GENERATED DOCUMENTATION
+  # --------------------------------------------------------------------------
+
+  # Prevent Woden from documenting its own output and creating an
+  # increasingly deranged documentation ouroboros.
+  - "_docs/**"
+  - "**/_docs/**"
+
+  # Preserve the existing hand-authored documentation separately
+  - "docs/**"
+  - "**/docs/**"
+
+  # Existing prose documentation
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/README"
+  - "**/README.*"
+  - "**/CHANGELOG"
+  - "**/CHANGELOG.*"
+  - "**/LICENSE"
+  - "**/LICENSE.*"
+
+
+  # --------------------------------------------------------------------------
+  # DEPENDENCIES AND PACKAGE-MANAGER OUTPUT
+  # --------------------------------------------------------------------------
+
+  - "node_modules/**"
+  - "**/node_modules/**"
+  - "vendor/**"
+  - "**/vendor/**"
+
+  # Generated dependency lockfiles
+  - "package-lock.json"
+  - "**/package-lock.json"
+  - "yarn.lock"
+  - "**/yarn.lock"
+  - "pnpm-lock.yaml"
+  - "**/pnpm-lock.yaml"
+  - "bun.lock"
+  - "**/bun.lock"
+  - "bun.lockb"
+  - "**/bun.lockb"
+
+
+  # --------------------------------------------------------------------------
+  # FRONTEND AND SERVER BUILD OUTPUT
+  # --------------------------------------------------------------------------
+
+  - "dist/**"
+  - "**/dist/**"
+  - "build/**"
+  - "**/build/**"
+  - "out/**"
+  - "**/out/**"
+  - "coverage/**"
+  - "**/coverage/**"
+
+  # Framework and bundler output
+  - ".vite/**"
+  - "**/.vite/**"
+  - ".cache/**"
+  - "**/.cache/**"
+  - ".turbo/**"
+  - "**/.turbo/**"
+
+  # Generated bundles and source maps
+  - "**/*.min.js"
+  - "**/*.min.css"
+  - "**/*.bundle.js"
+  - "**/*.bundle.css"
+  - "**/*.chunk.js"
+  - "**/*.map"
+
+
+  # --------------------------------------------------------------------------
+  # ANDROID AND GRADLE GENERATED OUTPUT
+  # --------------------------------------------------------------------------
+
+  - "android/.gradle/**"
+  - "android/build/**"
+  - "android/app/build/**"
+  - "android/.idea/**"
+  - "android/captures/**"
+
+  # Capacitor-generated web assets
+  - "android/app/src/main/assets/public/**"
+
+  # Native compiled output
+  - "**/*.apk"
+  - "**/*.aab"
+  - "**/*.aar"
+  - "**/*.class"
+  - "**/*.dex"
+
+  # Binary Gradle wrapper
+  - "android/gradle/wrapper/gradle-wrapper.jar"
+
+
+  # --------------------------------------------------------------------------
+  # STATIC IMAGES, VIDEOS, AND BRAND ASSETS
+  # --------------------------------------------------------------------------
+
+  - "assets/**"
+  - "**/*.png"
+  - "**/*.jpg"
+  - "**/*.jpeg"
+  - "**/*.gif"
+  - "**/*.webp"
+  - "**/*.svg"
+  - "**/*.ico"
+  - "**/*.webm"
+  - "**/*.mp4"
+
+  # Android launcher icons and splash-screen images
+  - "android/app/src/main/res/drawable-*/**"
+  - "android/app/src/main/res/mipmap-*/**"
+  - "android/app/src/main/res/drawable/*.png"
+
+
+  # --------------------------------------------------------------------------
+  # VERSION CONTROL AND GITHUB METADATA
+  # --------------------------------------------------------------------------
+
+  - ".git/**"
+  - ".gitignore"
+  - "**/.gitignore"
+  - ".gitattributes"
+  - "**/.gitattributes"
+
+  # Pull request templates are process documentation rather than application
+  # architecture and do not need generated technical READMEs.
+  - ".github/PULL_REQUEST_TEMPLATE/**"
+  - ".github/pull_request_template.md"
+
+  # Ownership configuration
+  - ".github/CODEOWNERS"
+
+  # Exclude DocBot's own configuration
+  - ".github/wai-docbot.yml"
+
+
+  # --------------------------------------------------------------------------
+  # IDE AND EDITOR METADATA
+  # --------------------------------------------------------------------------
+
+  - ".idea/**"
+  - "**/.idea/**"
+  - ".vscode/**"
+  - "**/.vscode/**"
+  - ".vs/**"
+  - "**/.vs/**"
+  - ".history/**"
+  - "**/.history/**"
+  - ".settings/**"
+  - "**/.settings/**"
+
+  - ".DS_Store"
+  - "**/.DS_Store"
+  - "**/*.swp"
+  - "**/*.swo"
+  - "**/*~"
+
+
+  # --------------------------------------------------------------------------
+  # TEST OUTPUT, SNAPSHOTS, AND COVERAGE CACHE
+  # --------------------------------------------------------------------------
+
+  - "__snapshots__/**"
+  - "**/__snapshots__/**"
+  - ".nyc_output/**"
+  - "**/.nyc_output/**"
+  - "test-results/**"
+  - "**/test-results/**"
+  - "playwright-report/**"
+  - "**/playwright-report/**"
+
+  # Current Android test files are untouched Capacitor examples rather than
+  # meaningful VOID Repo Docs application tests.
+  - "android/app/src/test/**"
+  - "android/app/src/androidTest/**"
+
+
+  # --------------------------------------------------------------------------
+  # ENVIRONMENT FILES, CREDENTIALS, AND SECRETS
+  # --------------------------------------------------------------------------
+
+  # Never document runtime environment files
+  - ".env"
+  - ".env.*"
+  - "**/.env"
+  - "**/.env.*"
+
+  # Keep the safe environment template available for documentation
+  - "!.env.example"
+
+  - "**/local.settings.json"
+  - "**/credential.json"
+  - "**/credentials.json"
+
+  - "**/*.pem"
+  - "**/*.key"
+  - "**/*.p12"
+  - "**/*.pfx"
+  - "**/*.jks"
+  - "**/*.keystore"
+  - "**/*.crt"
+  - "**/*.cer"
+
+  - "secrets/**"
+  - "**/secrets/**"
+  - "**/*.secret"
+
+
+  # --------------------------------------------------------------------------
+  # TEMPORARY, BACKUP, AND LOG FILES
+  # --------------------------------------------------------------------------
+
+  - "**/*.log"
+  - "**/*.tmp"
+  - "**/*.temp"
+  - "**/*.bak"
+  - "**/*.backup"
+  - "tmp/**"
+  - "**/tmp/**"
+  - "temp/**"
+  - "**/temp/**"
