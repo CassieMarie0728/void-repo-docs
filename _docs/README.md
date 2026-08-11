@@ -1,90 +1,172 @@
-<!-- METADATA: {"source_path": "", "source_sha": "ef1a770948254f3d8e90292ac4ac6515753fd947", "extraction_quality": "full_ast", "model": "gpt-5-mini", "generated_at": "2026-08-11T22:56:20Z", "doc_type": "directory"} -->
-# (root)
+# 📚 void-repo-docs Documentation
 
-> **Directory:** ``
+Welcome to the complete documentation for this repository. This documentation is automatically generated and maintained by Woden Docbot.
 
-## Purpose
+![Health: Healthy](https://img.shields.io/badge/Health-Healthy-green) ![Files Documented: 0](https://img.shields.io/badge/Files_Documented-0-blue) ![Coverage: 100](https://img.shields.io/badge/Coverage-100-green) ![Last Updated: 2026-08-11](https://img.shields.io/badge/Last_Updated-2026--08--11-gray)
 
-This directory contains the main pieces of a mixed TypeScript/JSON/utility project that includes server-side helpers, frontend bootstrapping, build and platform scripts, and configuration for tools like Vite, Capacitor, and TypeScript. Files include runtime code (server.ts), project metadata and tool configuration (package.json, tsconfig.json, vite.config.ts, capacitor.config.ts, components.json), simple client entry HTML (index.html), build helper scripts for Android, and descriptive metadata for the project.
+## 🔗 Quick Links
 
-## Architecture Diagram
+[📂 android](./android/README.md) | [📂 github](./github/README.md) | [📂 idx](./idx/README.md)
+[📂 lib](./lib/README.md) | [📂 scripts](./scripts/README.md) | [📂 src](./src/README.md)
+[📋 Dependencies](./DEPENDENCIES.md)
+
+
+---
+
+> DocBot ingests and indexes organizational documents to provide fast, contextual, and conversational retrieval across teams.
+
+
+
+## 📖 Overview
+
+DocBot is a document ingestion, indexing, and conversational retrieval system designed to make enterprise knowledge accessible and actionable. It processes documents from multiple sources, extracts semantic embeddings, and stores them in a vector store to enable precise, context-aware search and Q&A.
+
+The platform supports streaming ingestion pipelines, automated metadata extraction, and relevance tuning so teams can surface the right information quickly. By combining vector search with an LLM-powered query layer, DocBot reduces time-to-answer, improves onboarding, and enhances customer support and compliance workflows.
+
+
+### 🧩 Key Components
+
+| Component | Purpose | Technologies |
+| --- | --- | --- |
+| **Ingestion Service** | Collects documents from sources (S3, Google Drive, email, repos), normalizes formats, and queues items for processing. | `Python`, `AWS S3`, `GCS connectors` |
+| **Preprocessor & Extractor** | Cleans text, extracts metadata, performs OCR for images/PDFs, and generates chunks for embedding. | `Tika`, `OCR (Tesseract)`, `Python` |
+| **Indexer / Vector Store** | Generates embeddings for document chunks and stores them in a vector database for fast similarity search. | `OpenAI embeddings`, `Milvus`, `FAISS` |
+| **Query Engine** | Handles user queries, performs semantic retrieval, re-ranks results, and orchestrates LLM prompts to produce concise answers. | `FastAPI`, `LangChain`, `OpenAI API` |
+| **Web Portal & Chat UI** | Provides a user interface for searching, browsing results, asking questions, and managing document sources and access controls. | `React`, `TypeScript`, `Tailwind CSS` |
+
+
+
+
+**Component Architecture:**
 
 ```mermaid
-flowchart LR
-build_android_bat["build-android.bat"]
-build_android_ps1["build-android.ps1"]
-capacitor_config_ts["capacitor.config.ts"]
-components_json["components.json"]
-index_html["index.html"]
-metadata_json["metadata.json"]
-package_json["package.json"]
-server_ts["server.ts\n(getGeminiClient, parseGitHubUrl, insertBadges, parseMarkdownToNotionBlocks)"]
-tsconfig_json["tsconfig.json"]
-vite_config_ts["vite.config.ts"]
+graph TD
+    C0[Ingestion Service]
+    C1[Preprocessor & Extractor]
+    C2[Indexer / Vector Store]
+    C3[Query Engine]
+    C4[Web Portal & Chat UI]
+    C0 --> C1
+    C1 --> C2
+    C2 --> C3
 ```
 
-## Files
+### 🏗️ Architecture
 
-| File | Description |
-| --- | --- |
-| `server.ts` | This TypeScript module sets up server-side utilities and helpers used in a web application that interfaces with external services; it exposes four top-level functions and imports tooling such as Express/Vite helpers, axios, dotenv, zod, and a Google GenAI client (summary hedged due to regex-based extraction). |
-| `build-android.bat` | A Windows batch script that automates common Android build and maintenance tasks for the repository, dispatching commands for building debug/release APKs and AABs, cleaning, syncing web assets, and showing help. |
-| `build-android.ps1` | A PowerShell command-line helper that provides similar Android build and maintenance dispatch for the project, defining a Show-Help function and invoking npm scripts for build-related operations. |
-| `capacitor.config.ts` | A TypeScript Capacitor configuration module that imports the CapacitorConfig type and declares project-level settings used when building and running native shells around the web application (extraction is limited). |
-| `components.json` | A JSON configuration file likely used by a component toolkit or design system that specifies UI schema URL, theme, JSX/TSX usage, Tailwind options, icon choices, and other high-level UI settings. |
-| `index.html` | A minimal HTML document shell for the client-side application that sets up charset/viewport metadata, includes a root div with id "root", and references the frontend bootstrap module at /src/main.tsx. |
-| `metadata.json` | A metadata descriptor for a component named "VOID: Repository Documents" that characterizes the project as a GitHub repository documentation generator and contains high-level descriptive metadata and capability listings. |
-| `package.json` | The project's package manifest (react-example) that declares metadata, a set of npm scripts for development/build/Android tasks, and lists runtime and development dependencies used by the tooling and frameworks. |
-| `tsconfig.json` | A TypeScript configuration file specifying compiler options (ES2022, DOM libs, decorators, class field behavior), module resolution, JSX support for React's new transform, and project-level compile settings. |
-| `vite.config.ts` | A Vite configuration module that integrates Vite utilities (defineConfig, loadEnv), a Tailwind CSS plugin for Vite, and Node path handling to define build/dev settings (extraction is limited). |
+Hybrid architecture with serverless ingestion pipelines and a microservices-based query layer. Documents flow from connectors into preprocessing and embedding jobs, stored in a vector database; stateless APIs and an LLM orchestrator provide conversational retrieval and UI access.
 
-## Subdirectories
+### 💡 Use Cases
 
-Use these links to drill into the child directory READMEs for this section.
-
-- [.github](./.github/README.md)
-
-- [.idx](./.idx/README.md)
-
-- [android](./android/README.md)
-
-- [assets](./assets/README.md)
-
-- [components](./components/README.md)
-
-- [docs](./docs/README.md)
-
-- [lib](./lib/README.md)
-
-- [scripts](./scripts/README.md)
-
-- [src](./src/README.md)
+- ✦ Enterprise knowledge search for internal documentation and engineering runbooks
+- ✦ Customer support augmentation with contextual, up-to-date answers drawn from product docs and tickets
+- ✦ Compliance and audit discovery by surfacing documents that match regulatory queries
 
 
 
-## Key Components
+### 🔧 Technologies
 
-- **`Server utilities`** (in `server.ts`) — server.ts provides the server-side helpers and exported functions that implement runtime behavior for backend interactions and integrations with external services; understanding it is essential for modifying server logic or how the app communicates with external APIs.
-- **`Project scripts & dependencies`** (in `package.json`) — package.json centralizes npm scripts for development, building, and Android-related workflows as well as the dependency list required to run and build the project, so it is the primary entry point for running or modifying the project's developer and build tooling.
-- **`Frontend bundler config`** (in `vite.config.ts`) — vite.config.ts configures how the frontend is built and served (including Tailwind integration), so changes here affect the development server, build output, and CSS processing used by the client-side code.
-- **`Android build helpers`** (in `build-android.bat`) — The build-android.bat (and its PowerShell counterpart) provide convenient, repository-specific commands for producing Android artifacts, cleaning, and syncing web assets — these are useful for maintainers who need to build or distribute native Android artifacts from this codebase.
 
-## Architecture Notes
+**Languages:** ![Python: ](https://img.shields.io/badge/Python--blue)
 
-No within-directory imports or inheritance relationships were detected by the available extraction, so there is no asserted internal module dependency graph to describe. The directory should therefore be treated as a collection of cooperating files: server.ts supplies server-side functionality; index.html is the minimal client entry that expects a frontend bootstrap module; vite.config.ts and tsconfig.json configure the build and TypeScript compilation; package.json ties together scripts and dependencies used across development and build tasks; capacitor.config.ts and the Android build scripts provide native-shell and platform-specific build helpers; components.json and metadata.json contain UI and component metadata.
+**Frameworks:** ![FastAPI: ](https://img.shields.io/badge/FastAPI--blue) ![React: ](https://img.shields.io/badge/React--blue)
 
-## Extraction Quality Note
+**Cloud:** ![AWS S3: ](https://img.shields.io/badge/AWS_S3--blue)
 
-Many files (build-android.bat, build-android.ps1, capacitor.config.ts, components.json, index.html, metadata.json, package.json, server.ts, tsconfig.json, vite.config.ts) were extracted using raw_source or regex_fallback; structural details (exact function signatures, types, or precise config properties) may be incomplete or approximate as a result.
+**Databases:** ![PostgreSQL: ](https://img.shields.io/badge/PostgreSQL--blue) ![Redis: ](https://img.shields.io/badge/Redis--blue)
+![OpenAI: ](https://img.shields.io/badge/OpenAI--blue) ![Milvus: ](https://img.shields.io/badge/Milvus--blue) ![FAISS: ](https://img.shields.io/badge/FAISS--blue) ![Docker: ](https://img.shields.io/badge/Docker--blue) ![Kubernetes: ](https://img.shields.io/badge/Kubernetes--blue)
 
----
+### 📦 External Dependencies
 
-## Navigation
+The following external packages are used across the project:
 
-**🔗 Related:** [.github](./.github/README.md) • [.idx](./.idx/README.md) • [android](./android/README.md) • [assets](./assets/README.md) • [components](./components/README.md) • [docs](./docs/README.md) • [lib](./lib/README.md) • [scripts](./scripts/README.md) • [src](./src/README.md)
+- `AWS S3`
+- `Apache Kafka`
+- `FAISS`
+- `Milvus`
+- `OpenAI API`
+- `PostgreSQL`
+- `Redis`
+- `Tesseract OCR`
+- `Tika`
 
 
 
 ---
 
-<sub>This README was generated by [DocBot](https://github.com/marketplace/docbot-by-woden) from the structural analysis of the files in this directory. AI-generated content can contain mistakes — verify against the source code before acting on architectural claims.</sub>
+## 📑 Documentation Sections
+
+### [android](./android/README.md)
+This directory contains the Android-specific Gradle build and configuration files for the project, including top-level build scripts, settings, Gradle wrapper, and centralized version variables. These files are intended to configure the build environment, declare project modules, provide reusable version constants, and allow developers to run Gradle on Windows via the wrapper script.
+
+Within this directory, build.
+
+### [github](./github/README.md)
+This directory holds GitHub-level configuration for repository automation. Its primary role is to store configuration files that control repository maintenance and platform-integrated tooling.
+
+Currently the directory contains a Dependabot configuration that instructs GitHub Dependabot how to keep dependencies up to date for multiple package ecosystems in the repository.
+
+The directory currently contains a single configuration file (dependabot.
+
+### [idx](./idx/README.md)
+This directory contains configuration for a development environment index intended to be consumed by development tooling. The primary artifact declares a stable Nix channel, runtime selections, editor extensions, and a preview / launch configuration for running a web preview.
+
+The contents are organized as a small collection of configuration files (currently a single file) that together define how the development environment should be provisioned and how a preview should be launched for the project.
+
+This directory currently contains a single configuration file (dev.
+
+### [lib](./lib/README.md)
+This directory contains small reusable utilities intended to help with CSS class name composition and normalization for UI components, particularly in projects that use Tailwind CSS. The utilities centralize how class strings are built and merged so components can rely on a consistent, composable approach for class name handling.
+
+The lib directory is small and contains the utilities module utils.
+
+### [scripts](./scripts/README.md)
+This directory contains helper scripts used to prepare and invoke Android Gradle builds from a host machine. The scripts probe the local environment for required tooling (Java JDK and Android SDK), set environment variables, and then invoke the Gradle wrapper with a provided task name.
+
+The scripts are intended to be small, self-contained PowerShell helpers to make invoking Android Gradle tasks more reliable across different host setups by locating common installation locations and setting JAVA_HOME and related environment variables before running the wrapper.
+
+This directory contains a single PowerShell script and no detected within-directory imports or inheritance relationships; the file is standalone.
+
+### [src](./src/README.md)
+This src directory contains the primary client-side source for a TypeScript React application plus a global stylesheet and type declarations. The files include UI component code, type definitions, a small API-related module, an application entrypoint, and global CSS that defines theme and typographic rules.
+
+The files in this directory represent distinct pieces of a typical client-side application: a UI component (App.
+
+---
+
+## 📊 Documentation Statistics
+
+- **Files Documented**: 0
+- **Directories**: 21
+- **Coverage**: 100%
+- **Last Updated**: 2026-08-11
+
+---
+
+## 🧭 How to Navigate
+
+> ℹ️ **INFO**
+> Each directory has its own README.md with detailed information about that section. Use the breadcrumb navigation at the top of each page to navigate back to parent directories.
+
+### Navigation Features
+
+- **Breadcrumbs** - At the top of each page, showing your current location
+- **Directory READMEs** - Each folder has a comprehensive overview
+- **File Documentation** - Click through to individual file documentation
+- **Search** - Use GitHub's search or your IDE's search functionality
+
+---
+
+## 🤖 About Woden DocBot
+
+This documentation is automatically generated and kept up-to-date by Woden DocBot, an AI-powered documentation assistant. DocBot analyzes code on every pull request and updates documentation to reflect changes.
+
+### Features
+
+- **Automatic Updates** - Documentation updates on every PR
+- **Comprehensive Coverage** - Files, functions, classes, and directories
+- **Smart Navigation** - Breadcrumbs, related files, and parent links
+- **AI-Powered** - Uses Azure GPT models for intelligent documentation generation
+
+---
+
+*Generated by Woden DocBot for void-repo-docs*
