@@ -1,13 +1,11 @@
-<!-- METADATA: {"source_path": "", "source_sha": "ef1a770948254f3d8e90292ac4ac6515753fd947", "extraction_quality": "full_ast", "model": "gpt-5-mini", "generated_at": "2026-08-11T22:54:21Z", "doc_type": "directory"} -->
+<!-- METADATA: {"source_path": "", "source_sha": "ef1a770948254f3d8e90292ac4ac6515753fd947", "extraction_quality": "full_ast", "model": "gpt-5-mini", "generated_at": "2026-08-11T22:56:20Z", "doc_type": "directory"} -->
 # (root)
 
 > **Directory:** ``
 
 ## Purpose
 
-This directory contains the configuration, build helpers, and minimal application entry points for a mixed TypeScript/JavaScript web project that also includes native Android/Capacitor build scripts and a small server-side utilities module. It collects project-level configuration (package.json, tsconfig.json, vite and Capacitor configs), front-end scaffolding (index.html, components.json), metadata, and platform-specific build helpers for Android.
-
-The files together support development, build, and packaging workflows for both web and mobile shells, and include a server-side TypeScript module that provides helpers used by the application when interacting with external services.
+This directory contains the main pieces of a mixed TypeScript/JSON/utility project that includes server-side helpers, frontend bootstrapping, build and platform scripts, and configuration for tools like Vite, Capacitor, and TypeScript. Files include runtime code (server.ts), project metadata and tool configuration (package.json, tsconfig.json, vite.config.ts, capacitor.config.ts, components.json), simple client entry HTML (index.html), build helper scripts for Android, and descriptive metadata for the project.
 
 ## Architecture Diagram
 
@@ -20,7 +18,7 @@ components_json["components.json"]
 index_html["index.html"]
 metadata_json["metadata.json"]
 package_json["package.json"]
-server_ts["server.ts"]
+server_ts["server.ts\n(getGeminiClient, parseGitHubUrl, insertBadges, parseMarkdownToNotionBlocks)"]
 tsconfig_json["tsconfig.json"]
 vite_config_ts["vite.config.ts"]
 ```
@@ -29,16 +27,16 @@ vite_config_ts["vite.config.ts"]
 
 | File | Description |
 | --- | --- |
-| `server.ts` | A TypeScript module that sets up server-side utilities and helpers for a web application, importing Express/Vite tooling, axios, dotenv, zod, and a Google GenAI client, and exposing four top-level functions used to interface with external services and application-specific types. |
-| `build-android.bat` | A Windows batch script that automates Android build and maintenance tasks for the repository, dispatching to npm scripts to build debug/release APKs, create AABs, clean artifacts, sync web assets, and show help. |
-| `build-android.ps1` | A PowerShell command-line helper that prints usage and dispatches Android-related tasks (debug/release APK, AAB, clean, sync) by invoking corresponding npm scripts and checking exit codes. |
-| `capacitor.config.ts` | A TypeScript Capacitor configuration module that imports the CapacitorConfig type and provides a typed configuration object used when building and running native shells around the web application. |
-| `components.json` | A JSON configuration file for the project's UI/library that defines settings such as a UI schema URL, style theme, TypeScript JSX usage, Tailwind-related options, and the chosen icon set. |
-| `index.html` | A minimal HTML document shell for the client-side application with a root mounting div and a module script reference to /src/main.tsx that bootstraps the frontend. |
-| `metadata.json` | A metadata file describing a component named 'VOID: Repository Documents' with high-level metadata about a documentation generator for GitHub repositories and a brief description of its style and capabilities. |
-| `package.json` | The project's package.json declaring the project name, version, npm scripts for development, building, cleaning, linting and Android tasks, and listing runtime and dev dependencies used by the tooling and frameworks. |
-| `tsconfig.json` | A TypeScript configuration file specifying compiler and project options including language targets (ES2022, DOM), experimental decorators and class field behavior, ESNext modules, JSX support for React's new transform, and allowing JavaScript imports. |
-| `vite.config.ts` | A Vite configuration TypeScript module that imports defineConfig and loadEnv from Vite, integrates a Tailwind CSS plugin, and references Node's path module to define build and dev settings. |
+| `server.ts` | This TypeScript module sets up server-side utilities and helpers used in a web application that interfaces with external services; it exposes four top-level functions and imports tooling such as Express/Vite helpers, axios, dotenv, zod, and a Google GenAI client (summary hedged due to regex-based extraction). |
+| `build-android.bat` | A Windows batch script that automates common Android build and maintenance tasks for the repository, dispatching commands for building debug/release APKs and AABs, cleaning, syncing web assets, and showing help. |
+| `build-android.ps1` | A PowerShell command-line helper that provides similar Android build and maintenance dispatch for the project, defining a Show-Help function and invoking npm scripts for build-related operations. |
+| `capacitor.config.ts` | A TypeScript Capacitor configuration module that imports the CapacitorConfig type and declares project-level settings used when building and running native shells around the web application (extraction is limited). |
+| `components.json` | A JSON configuration file likely used by a component toolkit or design system that specifies UI schema URL, theme, JSX/TSX usage, Tailwind options, icon choices, and other high-level UI settings. |
+| `index.html` | A minimal HTML document shell for the client-side application that sets up charset/viewport metadata, includes a root div with id "root", and references the frontend bootstrap module at /src/main.tsx. |
+| `metadata.json` | A metadata descriptor for a component named "VOID: Repository Documents" that characterizes the project as a GitHub repository documentation generator and contains high-level descriptive metadata and capability listings. |
+| `package.json` | The project's package manifest (react-example) that declares metadata, a set of npm scripts for development/build/Android tasks, and lists runtime and development dependencies used by the tooling and frameworks. |
+| `tsconfig.json` | A TypeScript configuration file specifying compiler options (ES2022, DOM libs, decorators, class field behavior), module resolution, JSX support for React's new transform, and project-level compile settings. |
+| `vite.config.ts` | A Vite configuration module that integrates Vite utilities (defineConfig, loadEnv), a Tailwind CSS plugin for Vite, and Node path handling to define build/dev settings (extraction is limited). |
 
 ## Subdirectories
 
@@ -66,18 +64,18 @@ Use these links to drill into the child directory READMEs for this section.
 
 ## Key Components
 
-- **`Server utilities`** (in `server.ts`) — Provides the server-side helpers and utilities used by the application to interact with external services and perform server responsibilities; it is the main server-side entry in this directory and shapes backend behavior.
-- **`Project manifest and scripts`** (in `package.json`) — Orchestrates development, build, and platform-specific tasks (including Android/Capacitor operations) and declares dependencies; it is the central entry point for running the workflows referenced by other tooling and scripts in the directory.
-- **`Vite configuration`** (in `vite.config.ts`) — Defines the frontend bundler and dev-server behavior (including Tailwind integration) used to build and serve the web application, making it a key piece of the frontend build pipeline.
-- **`Capacitor configuration`** (in `capacitor.config.ts`) — Provides the typed configuration for building native shells around the web app with Capacitor, which is essential for producing mobile artifacts and coordinating native integration with the web code.
+- **`Server utilities`** (in `server.ts`) — server.ts provides the server-side helpers and exported functions that implement runtime behavior for backend interactions and integrations with external services; understanding it is essential for modifying server logic or how the app communicates with external APIs.
+- **`Project scripts & dependencies`** (in `package.json`) — package.json centralizes npm scripts for development, building, and Android-related workflows as well as the dependency list required to run and build the project, so it is the primary entry point for running or modifying the project's developer and build tooling.
+- **`Frontend bundler config`** (in `vite.config.ts`) — vite.config.ts configures how the frontend is built and served (including Tailwind integration), so changes here affect the development server, build output, and CSS processing used by the client-side code.
+- **`Android build helpers`** (in `build-android.bat`) — The build-android.bat (and its PowerShell counterpart) provide convenient, repository-specific commands for producing Android artifacts, cleaning, and syncing web assets — these are useful for maintainers who need to build or distribute native Android artifacts from this codebase.
 
 ## Architecture Notes
 
-No within-directory imports or inheritance relationships were detected by the extraction process, so the files are described here as a collection of complementary components rather than an explicit import graph. Conceptually, the directory contains (a) a server-side utility module (server.ts), (b) frontend entry and build configuration (index.html, vite.config.ts, components.json), (c) TypeScript compiler settings (tsconfig.json), (d) project metadata and manifest (metadata.json, package.json), and (e) mobile/native-related configuration and scripts (capacitor.config.ts, build-android.bat, build-android.ps1). There is no extracted evidence in these files of direct internal module imports linking them; any runtime or build-time integration between these pieces (for example, how npm scripts in package.json invoke the build scripts or how the Vite config is consumed) is not shown in the detected within-directory relationships.
+No within-directory imports or inheritance relationships were detected by the available extraction, so there is no asserted internal module dependency graph to describe. The directory should therefore be treated as a collection of cooperating files: server.ts supplies server-side functionality; index.html is the minimal client entry that expects a frontend bootstrap module; vite.config.ts and tsconfig.json configure the build and TypeScript compilation; package.json ties together scripts and dependencies used across development and build tasks; capacitor.config.ts and the Android build scripts provide native-shell and platform-specific build helpers; components.json and metadata.json contain UI and component metadata.
 
 ## Extraction Quality Note
 
-Several files were extracted with lower-fidelity methods (regex_fallback or raw_source): build-android.bat, build-android.ps1, capacitor.config.ts, components.json, index.html, metadata.json, package.json, server.ts, tsconfig.json, and vite.config.ts; their structure or detailed internals may be incomplete or approximated in these summaries.
+Many files (build-android.bat, build-android.ps1, capacitor.config.ts, components.json, index.html, metadata.json, package.json, server.ts, tsconfig.json, vite.config.ts) were extracted using raw_source or regex_fallback; structural details (exact function signatures, types, or precise config properties) may be incomplete or approximate as a result.
 
 ---
 
