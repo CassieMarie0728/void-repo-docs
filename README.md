@@ -354,4 +354,6 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
   <p><em>VOID Repo Docs: Because even code needs a prenup.</em></p>
   <p><a href="https://void-repository-documents-320691612506.us-west2.run.app/">Visit the VOID</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs">Star This Repo</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs/issues">Report a Bug</a></p>
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CassieMarie0728/void-repo-docs)
+
 </div>
