@@ -72,15 +72,15 @@ Generates one to five Markdown drafts.
 
 ### Repository context
 
-When `repoUrl` is present, the server parses GitHub owner and repository names and requests:
+When `repoUrl` is present, the backend resolves the default branch to a commit and reads its
+file inventory plus a bounded set of source blobs. Deployment config, explicit database dialect,
+runtime entry point, schema, auth, and routing evidence take precedence over dependency guesses.
+Unreadable or partial evidence is marked unknown. Snapshots are cached for five minutes.
 
-- `/repos/{owner}/{repo}`
-- `/repos/{owner}/{repo}/readme`
-- `/repos/{owner}/{repo}/license`
-- `/repos/{owner}/{repo}/contents/package.json`
-
-README and license fetches can fail independently and become empty context. Failure of the repository
-metadata request fails repository-mode generation.
+See [Source grounding](grounding.md) for file/size limits, request costs, and validation limits.
+A detected script/dialect contradiction permits one correction attempt. Repeated contradictions
+return 422; no inconsistent draft is returned. Optional `repoUrl` on `/api/refine` supplies the
+same evidence to refinement; the existing draft alone is not independently verified evidence.
 
 ### Response
 

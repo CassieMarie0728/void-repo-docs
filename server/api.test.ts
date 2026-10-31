@@ -39,6 +39,8 @@ test('HTTP generation, refinement, authentication and validation', async () => {
     assert.equal((await post('/api/refine', { markdown: 123, instruction: 'edit' })).status, 400);
     assert.equal((await post('/api/refine', { markdown: 'draft', instruction: 'edit', provider: 'gemini' })).status, 400);
     const input = { provider: 'selfhosted', targetPlatform: TargetPlatform.WebApp, appName: 'Test App', docType: DocumentType.Readme, tone: Tone.Professional, length: Length.Short, versionCount: 2 };
+    assert.equal((await post('/api/generate', { ...input, targetPlatform: TargetPlatform.GithubRepo, repoUrl: 'https://notgithub.com/example/project' })).status, 400);
+    assert.equal((await post('/api/refine', { markdown: 'draft', instruction: 'edit', repoUrl: 'https://notgithub.com/example/project' })).status, 400);
     assert.equal((await post('/api/generate', { ...input, versionCount: 1.5 })).status, 400);
     const generated = await post('/api/generate', input);
     assert.equal(generated.status, 200);

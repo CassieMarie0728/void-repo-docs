@@ -482,6 +482,7 @@ export default function App() {
     try {
       const response = await apiClient.post<{ markdown: string }>("/api/refine", {
         markdown: editedMarkdown,
+        repoUrl: result?.repo || "",
         instruction: finalInstruction,
         tone: tone,
         customKeys,

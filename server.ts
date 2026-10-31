@@ -5,7 +5,9 @@ import axios from "axios";
 import { z } from "zod";
 import dotenv from "dotenv";
 import { DocumentType, Tone, Length, TargetPlatform } from "./src/types.ts";
-import { AIError, complete, routingSchema } from "./server/ai.ts";
+import { AIError, routingSchema } from "./server/ai.ts";
+import { fetchRepoInfo } from "./server/repository.ts";
+import { GROUNDING_RULES, evidencePrompt, groundedComplete } from "./server/grounding.ts";
 
 dotenv.config();
 
@@ -90,10 +92,14 @@ const genSchema = z.object({
 
 // Helper to extract owner and repo from URL
 function parseGitHubUrl(url: string) {
-  const regex = /github\.com\/([^/]+)\/([^/.]+)(\.git)?/;
-  const match = url.match(regex);
-  if (!match) return null;
-  return { owner: match[1], repo: match[2] };
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "github.com" || parsed.protocol !== "https:") return null;
+    const [owner, name] = parsed.pathname.split("/").filter(Boolean);
+    const repo = name?.replace(/\.git$/, "");
+    if (!owner || !repo || !/^[\w.-]+$/.test(owner) || !/^[\w.-]+$/.test(repo) || [".", ".."].includes(repo)) return null;
+    return { owner, repo };
+  } catch { return null; }
 }
 
 // Helper to insert active badges into generated README documents
@@ -197,37 +203,6 @@ function insertBadges(markdown: string, validated: any): string {
 }
 
 
-// GitHub API Client
-async function fetchRepoInfo(owner: string, repo: string) {
-  const headers: any = {};
-  if (process.env.GITHUB_TOKEN) {
-    headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
-  }
-
-  try {
-    const [repoData, readmeData, licenseData, packageJsonData] = await Promise.all([
-      axios.get(`https://api.github.com/repos/${owner}/${repo}`, { headers }).then(res => res.data),
-      axios.get(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers }).then(res => axios.get(res.data.download_url)).then(res => res.data.substring(0, 5000)).catch(() => ""),
-      axios.get(`https://api.github.com/repos/${owner}/${repo}/license`, { headers }).then(res => axios.get(res.data.download_url)).then(res => res.data.substring(0, 3000)).catch(() => ""),
-      axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/package.json`, { headers }).then(res => axios.get(res.data.download_url)).then(res => res.data).catch(() => ""),
-    ]);
-
-    return {
-      fullName: repoData.full_name,
-      description: repoData.description,
-      language: repoData.language,
-      topics: repoData.topics,
-      homepage: repoData.homepage,
-      readme: readmeData,
-      license: licenseData,
-      packageJson: packageJsonData,
-    };
-  } catch (error: any) {
-    if (error.response?.status === 404) throw new Error("Repository not found or is private");
-    throw new Error("Failed to fetch repository data from GitHub");
-  }
-}
-
 app.post("/api/generate", async (req, res) => {
   try {
     const validated = genSchema.parse(req.body);
@@ -258,21 +233,16 @@ app.post("/api/generate", async (req, res) => {
 
     if (!repoContext) {
       const appName = validated.appName || "Void Application";
-      const appDesc = validated.appDescription || "A modern software application.";
+      const appDesc = validated.appDescription || "Description not supplied.";
       
       repoContext = {
         fullName: appName,
         description: appDesc,
-        language: validated.targetPlatform === TargetPlatform.AndroidApp ? "Kotlin/Java" : "TypeScript/JavaScript",
+        language: "Not supplied; do not infer a language from the target platform",
         topics: [validated.targetPlatform || "software"],
         homepage: validated.webUrl || "",
-        readme: "",
-        license: "",
-        packageJson: {
-          name: appName.toLowerCase().replace(/\s+/g, "-"),
-          description: appDesc,
-          dependencies: {}
-        }
+        sources: [],
+        evidenceNotes: ["Manual app details only. No repository files were supplied; implementation, versions, commands, and schemas are unverified."]
       };
     }
     
@@ -334,7 +304,7 @@ TARGET PLATFORM CONFIGURATION (WEB APPLICATION / SAAS):
 - Data Collection & Cookies Tracking Enabled: ${trackingList}
 - Authentication & Identity Provider: ${validated.authProvider || "None / Guest Access"}
 - Web Application Specific Legal Requirements:
-  * Your generated document must exhaustively address specific web-based disclosures, including cookie consent policies, first-party essential cookies vs. third-party tracking, localized cache/session storage, and secure third-party payment processors (such as Stripe payments security and compliance) if payments are enabled.
+  * Address web disclosures only for supplied practices and services. Distinguish known essential storage, analytics, and payment integrations from unknowns. Use placeholders for unknown consent, retention, sharing, or security practices; do not imply Stripe or tracking is active merely because the target is a web app.
   * For Web/SaaS Terms of Service, explicitly cover cloud hosting capacity limits, registration credentials safety, account deletion/termination clauses, and clear Acceptable Use Policies (banning scrapers, automated crawlers, database spamming, and reverse proxies).`;
     } else if (validated.targetPlatform === TargetPlatform.AndroidApp) {
       platformHeaderStr = "for a Native Android Mobile Application destined for release on the Google Play Store";
@@ -351,13 +321,16 @@ TARGET PLATFORM CONFIGURATION (NATIVE ANDROID MOBILE APP):
 - Integrated SDK & Third-Party Monetization: ${monetizationList}
 - Android/Google Play Compliance Requirements:
   * Draft clear disclosures based on the supplied permissions and services. Do not promise store approval or claim policy compliance has been independently verified.
-  * For Privacy Policies: You MUST outline each requested Android permission (Camera, Location, Push Notifications, Bluetooth, Storage) in a distinct bullet or section, describing exactly how it functions, why the app requires it, and that the data is treated as transient or securely transmitted. Disclose Google Play developer data safety standards.
+  * For Privacy Policies: Address only explicitly supplied permissions and services. Do not add Camera, Location, Storage, or other permissions merely because this is an Android app. Mark unknown collection, retention, security, and sharing practices as placeholders; do not invent assurances about transient processing or secure transmission.
   * For EULAs / Terms of Service: Draft it as an End-User License Agreement explicitly formatted for a mobile device. Include explicit reverse engineering prohibitions, APK side-loading bans, app integrity protections, and a mandatory "Third-Party Store Override" stating that this agreement is strictly between the developer and the End-User, and that Google LLC/Google Play bears no warranty, liability, or support responsibility for the software.`;
     }
 
     const systemPrompt = `You are an expert technical and legal writer, playing the character of a legendary writer. Your task is to generate a ${validated.docType} document ${platformHeaderStr}.
 Tone Profile: ${validated.tone}
 Length Target: ${lengthInstruction}
+
+${GROUNDING_RULES}
+
 ${platformInstructions}
 
 IMPORTANT RULES:
@@ -367,7 +340,7 @@ IMPORTANT RULES:
 4. Include a disclaimer at the bottom stating: "Disclaimer: This document is a starting template and should be reviewed by a qualified attorney before use."
 5. PROJECT-CENTRIC GENERATION:
    - Generate all documents based on the actual application/software PROJECT itself (i.e., its features, business logic, system architecture, database design, target audience, and installation/operational footprint).
-   - DO NOT focus on Git repository wrapper details (such as lists of commits, PR workflows, branches, or repository metadata) unless specifically requested by document types like CODEOWNERS or CI_CD_DOCUMENTATION.md. Treat the software as a production-ready system/SaaS product rather than just a code repo folder.
+   - DO NOT focus on Git repository wrapper details (such as lists of commits, PR workflows, branches, or repository metadata) unless specifically requested by document types like CODEOWNERS or CI_CD_DOCUMENTATION.md. Describe the actual software and its observed development/deployment state. Do not assume it is production-ready.
 6. DYNAMIC RELEVANCY AUDITING (CRITICAL ENFORCEMENT):
    - Before generating the requested document, perform a strict relevancy check of the requested document type ("${validated.docType}") against the REPOSITORY/APP CONTEXT.
    - If the requested document type is NOT structurally relevant to the actual project (for example, requesting a 'MODEL_CARD.md', 'BIAS_AND_FAIRNESS.md', 'DATASET_CARD.md', 'TRAINING.md', 'EVALUATION.md', 'PROMPT_ENGINEERING.md', or 'INFERENCE.md' for a project that has absolutely NO machine learning, AI, LLMs, neural networks, or data science features; or requesting a 'CITATIONS.cff' for a standard commercial or consumer app with no academic/research background), YOU MUST NOT make up or hallucinate a fake document with dummy metrics or fictional training configurations.
@@ -380,27 +353,19 @@ IMPORTANT RULES:
 
 ${toneInstructions}
 
-REPOSITORY CONTEXT:
-Full Name: ${repoContext.fullName}
-Description: ${repoContext.description}
-Primary Language: ${repoContext.language}
-Topics: ${repoContext.topics?.join(", ")}
-Homepage: ${repoContext.homepage}
-README Excerpt: ${repoContext.readme}
-LICENSE Excerpt: ${repoContext.license}
-package.json: ${typeof repoContext.packageJson === "object" ? JSON.stringify(repoContext.packageJson, null, 2) : (repoContext.packageJson || "None found")}
+${evidencePrompt(repoContext)}
 `;
 
     let userPrompt = `Generate a ${validated.docType} for the repository "${repoContext.fullName}" in ${validated.tone} tone and ${validated.length} length.`;
     if (validated.tone === Tone.DeadpoolCool) {
       if (validated.targetPlatform === TargetPlatform.AndroidApp) {
-        userPrompt = `URGENT MANDATE: Generate a Play-Store-compliant ${validated.docType} for the Native Android Mobile Application "${repoContext.fullName}" (${validated.packageName || "com.example.app"}). Unleash ultimate "Deadpool-cool" style: be unhinged, hilariously cynical, break the 4th wall, make fun of Google's policy compliance or the users, but keep the legal terms 100% correct and airtight. Length Target: ${validated.length}.`;
+        userPrompt = `URGENT MANDATE: Generate a mobile-app ${validated.docType} draft for the Native Android Mobile Application "${repoContext.fullName}" (${validated.packageName || "com.example.app"}). Unleash ultimate "Deadpool-cool" style: be unhinged, hilariously cynical, break the 4th wall, make fun of Google's policy compliance or the users, but keep the legal terms coherent and do not claim verified compliance. Length Target: ${validated.length}.`;
       } else if (validated.targetPlatform === TargetPlatform.WebApp) {
-        userPrompt = `URGENT MANDATE: Generate a GDPR-compliant ${validated.docType} for the Web Application "${repoContext.fullName}" (${validated.webUrl || "https://example.com"}). Unleash ultimate "Deadpool-cool" style: sarcastically mock browser tracking, cookies, legal agreements, and the fact that absolutely no one reads these, but ensure the legal shields are utterly watertight. Length Target: ${validated.length}.`;
+        userPrompt = `URGENT MANDATE: Generate a web-app ${validated.docType} draft for the Web Application "${repoContext.fullName}" (${validated.webUrl || "https://example.com"}). Unleash ultimate "Deadpool-cool" style: sarcastically mock browser tracking, cookies, legal agreements, and the fact that absolutely no one reads these, but keep the legal terms coherent without claiming guaranteed enforceability. Length Target: ${validated.length}.`;
       } else {
         userPrompt = `URGENT MANDATE: Generate a ${validated.docType} for the repository "${repoContext.fullName}". You are commanded to craft an absolute masterpiece of raw, high-attitude "Deadpool-cool" style. 
 
-Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash absolute snark, brilliant meta-cynicism, mock the developers/users, and strip all pleasantries. Deliver 100% legally correct content but loaded with ultimate disrespect, parenthetical side-eyes, and fourth-wall breaks. Under no circumstances should you sound like a standard academic template. Length Target: ${validated.length}.`;
+Unleash sharp snark, brilliant meta-cynicism, and fourth-wall breaks. Keep every technical claim tied to supplied evidence and preserve legally coherent draft terms. Humor must never fabricate repository facts. Under no circumstances should you sound like a standard academic template. Length Target: ${validated.length}.`;
       }
     } else if (validated.targetPlatform === TargetPlatform.AndroidApp || validated.targetPlatform === TargetPlatform.WebApp) {
       userPrompt = `Generate a ${validated.docType} for the application "${repoContext.fullName}" (Target Context: ${validated.targetPlatform === TargetPlatform.AndroidApp ? "Android Play Store app" : "Web app"}). Match this target context carefully in the generated document structure. Length Target: ${validated.length}.`;
@@ -424,12 +389,12 @@ Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash 
         const focus = variationProfile[idx] || "";
         const customSystemPrompt = systemPrompt + (focus ? `\n\nVARIATION PROFILE (Draft ${idx + 1}):\n${focus}` : "");
 
-        const { markdown, provider: activeProvider, model: usedModel } = await complete(
-          validated, customSystemPrompt, userPrompt, temperature,
+        const { markdown, provider: activeProvider, model: usedModel } = await groundedComplete(
+          validated, repoContext, customSystemPrompt, userPrompt, temperature,
         );
 
         const processedMarkdown = insertBadges(markdown, validated);
-        const provenance = `<!--\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nDraft Version: ${idx + 1} of ${versionCount}\nGenerated: ${new Date().toISOString()}\nProvider: ${activeProvider.toUpperCase()}${usedModel ? ` (${usedModel})` : ""}\n-->\n\n`;
+        const provenance = `<!--\nEvidence snapshot: ${repoContext.revision || "manual inputs only"}\nEvidence files: ${(repoContext.sources || []).map((source: { path: string }) => source.path).join(", ")}\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nDraft Version: ${idx + 1} of ${versionCount}\nGenerated: ${new Date().toISOString()}\nProvider: ${activeProvider.toUpperCase()}${usedModel ? ` (${usedModel})` : ""}\n-->\n\n`;
         return provenance + processedMarkdown;
       });
 
@@ -465,15 +430,24 @@ app.post("/api/refine", async (req, res) => {
       markdown: z.string().min(1).max(500000),
       instruction: z.string().min(1).max(10000),
       tone: z.nativeEnum(Tone).optional(),
+      repoUrl: z.string().url().max(255).optional().or(z.literal("")),
     }).parse(req.body);
     const { markdown, instruction, tone } = validated;
+
+    let evidence = { fullName: "Existing draft", sources: [], evidenceNotes: ["Only the draft and user instructions are available. Draft claims have not been independently verified."] } as import("./server/repository.ts").RepositoryContext;
+    if (validated.repoUrl) {
+      const repository = parseGitHubUrl(validated.repoUrl);
+      if (!repository) return res.status(400).json({ error: "A valid GitHub repository URL is required for evidence-based refinement." });
+      try { evidence = await fetchRepoInfo(repository.owner, repository.repo); }
+      catch { return res.status(400).json({ error: "Repository evidence could not be loaded for refinement. Try again later." }); }
+    }
 
     let refineToneInstructions = "";
     if (tone === Tone.DeadpoolCool) {
       refineToneInstructions = `
 CRITICAL TONE MANDATE FOR REFINE (Deadpool-cool):
 - Rewrite or edit the input markdown with maximum sarcastic, meta-humorous, and fourth-wall-breaking Deadpool-cool attitude.
-- Be delightfully disrespectful, mock software practices, developers, and licensing, but verify all legal terms remain functionally watertight.
+- Be delightfully disrespectful about software practices, developers, and licensing while preserving legally coherent draft terms. Do not claim guaranteed enforceability.
 - Use witty annotations, cynical analogies, and parenthetical side-eyes.
 - Drop all generic AI politeness or normal template phrasing. No boring prose or academic safety pads!
 - DO NOT use copyrighted names (No "Deadpool", "Marvel", "Avengers", "Wade Wilson", "chimichangas", etc.). Maintain your own unique, high-octane snark.`;
@@ -488,7 +462,9 @@ CRITICAL LAWS:
 3. DO NOT wrap the markdown inside triple-backtick markdown blocks (\`\`\`markdown) since this goes directly into a markdown editor. Keep the output as pure, valid raw markdown text.
 4. Do NOT output introductory chatter, explanations, summaries ("Here is your refined document", "I have updated the clauses"), or conversational footnotes. Under no circumstances should you talk outside the document text itself.
 5. If the document has a disclaimer at the bottom, preserve it.
+${GROUNDING_RULES}
 ${refineToneInstructions}
+${evidencePrompt(evidence)}
 `;
 
     const userPrompt = `Input Markdown Content:
@@ -501,7 +477,7 @@ Refinement Instruction:
 ${tone ? `Ensure you align with a tone value of: ${tone}.` : ""}
 `;
 
-    const result = await complete(validated, systemInstruction, userPrompt, 0.3);
+    const result = await groundedComplete(validated, evidence, systemInstruction, userPrompt, 0.3);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid refinement parameters." });
