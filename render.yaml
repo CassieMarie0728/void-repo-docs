@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+services:
+  - type: web
+    name: void-repo-docs
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run lint && npm test && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: OPENROUTER_MODEL
+        value: openrouter/free
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: VOID_API_TOKEN
+        generateValue: true
+      - key: AI_TIMEOUT_MS
+        value: "120000"
+      - key: AI_MAX_TOKENS
+        value: "4096"

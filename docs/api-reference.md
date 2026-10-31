@@ -1,7 +1,7 @@
 # API Reference
 
 The Express API exposes three JSON endpoints. All run on port `3000` and are mounted under `/api`.
-There is no authentication layer in this repository.
+When VOID_API_TOKEN is configured, send it as a Bearer token on every API request except /api/health.
 
 ## Common Behavior
 
@@ -29,8 +29,9 @@ Generates one to five Markdown drafts.
   "length": "medium",
   "versionCount": 1,
   "provider": "auto",
+  "allowCloudFallback": false,
   "customKeys": {
-    "gemini": "",
+    "selfhosted": "",
     "mistral": "",
     "openrouter": "",
     "groq": ""
@@ -56,7 +57,8 @@ Generates one to five Markdown drafts.
 | `tone` | enum | Formal, Professional, Friendly, Casual, Laid-back, or Deadpool-cool |
 | `length` | enum | `short`, `medium`, or `long` |
 | `versionCount` | number | Integer-like value from 1 through 5 |
-| `provider` | enum | `auto`, `gemini`, `mistral`, `openrouter`, or `groq` |
+| `provider` | enum | Default `openrouter`; also `auto`, `selfhosted`, `mistral`, or `groq` |
+| `allowCloudFallback` | boolean | Default false; permits cloud attempts in Auto mode |
 | `customKeys` | object | Optional per-request provider key overrides |
 | `targetPlatform` | enum | `github_repo`, `web_app`, or `android_app` |
 | `appName` | string | Maximum 100 characters; required for web and Android targets |
@@ -105,7 +107,7 @@ draft number, generation timestamp, provider, and model.
 ```
 
 ```json
-{ "error": "Gemini API key not configured. Set it in the App Settings > API Keys or in environment variables." }
+{ "error": "No configured AI engine completed the request. Check your model server and AI_MODEL. Cloud fallback is off." }
 ```
 
 ```json
@@ -114,7 +116,7 @@ draft number, generation timestamp, provider, and model.
 
 ## `POST /api/refine`
 
-Rewrites an existing Markdown document with Gemini.
+Rewrites Markdown using the shared provider router and the requested provider/fallback settings.
 
 ### Request
 
@@ -124,7 +126,7 @@ Rewrites an existing Markdown document with Gemini.
   "instruction": "Add a GDPR data-subject rights section.",
   "tone": "Professional",
   "customKeys": {
-    "gemini": ""
+    "selfhosted": ""
   }
 }
 ```
@@ -136,11 +138,13 @@ Zod schema and does not impose explicit field length limits.
 
 ### Provider behavior
 
-- Uses `customKeys.gemini` when supplied.
-- Otherwise uses `GEMINI_API_KEY`.
-- Uses model `gemini-3.5-flash`.
-- Uses temperature `0.3`.
-- Returns raw Markdown without code fences or commentary.
+- Accepts `provider`, `customKeys`, and `allowCloudFallback`, just like generation.
+- Auto defaults to self-hosted only. Explicit cloud consent enables fallback.
+- `AI_BASE_URL`, `AI_MODEL`, and optional `AI_API_KEY` configure local inference on the server.
+- Both routes validate input with Zod and reject empty or truncated model output.
+- Authentication uses `Authorization: Bearer <VOID_API_TOKEN>` when configured.
+- Configuration errors return 400, quota errors 402/429, and upstream failures 502.
+
 
 ### Response
 
@@ -153,7 +157,7 @@ Zod schema and does not impose explicit field length limits.
 ### Errors
 
 - `400` when Markdown or instruction is missing.
-- `500` for missing Gemini configuration or provider failure.
+- `400` for missing selected cloud configuration, `502` for provider failure.
 
 ## `POST /api/export-notion`
 
@@ -212,7 +216,7 @@ $body = @{
   tone = "Deadpool-cool"
   length = "long"
   versionCount = 1
-  provider = "gemini"
+  provider = "selfhosted"
   targetPlatform = "github_repo"
 } | ConvertTo-Json
 
@@ -227,7 +231,7 @@ Invoke-RestMethod `
 
 Before exposing the API publicly, add:
 
-- Authentication or a trusted gateway.
+- Per-user authorization, rate limits, and a trusted gateway for shared deployments.
 - Request-level rate limits and quotas.
 - Provider timeouts and cancellation.
 - Structured request IDs and logs.
@@ -237,3 +241,9 @@ Before exposing the API publicly, add:
 
 Without those controls, a public endpoint connected to paid AI keys is less "service" and more
 "community-funded stress test."
+
+## GET /api/ai/status
+
+Returns the app identifier, default provider (`openrouter`), model (`openrouter/free` unless
+configured otherwise), configured cloud provider names, and fallback default. Requires the
+server access token when configured. Does not perform a model call or expose credentials.

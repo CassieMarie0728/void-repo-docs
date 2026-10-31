@@ -76,10 +76,10 @@ export enum Length {
   Long = "long"
 }
 
-export type ProviderType = "auto" | "gemini" | "mistral" | "openrouter" | "groq";
+export type ProviderType = "auto" | "selfhosted" | "mistral" | "openrouter" | "groq";
 
 export interface CustomApiKeys {
-  gemini?: string;
+  selfhosted?: string;
   mistral?: string;
   openrouter?: string;
   groq?: string;
@@ -104,6 +104,7 @@ export interface GenRequest {
   versionCount?: number;
   provider?: ProviderType;
   customKeys?: CustomApiKeys;
+  allowCloudFallback?: boolean;
 
   // Target Platform Settings
   targetPlatform?: TargetPlatform;

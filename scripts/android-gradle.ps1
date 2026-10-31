@@ -14,12 +14,12 @@ function Find-JavaHome {
     )
 
     foreach ($candidate in $candidates) {
-        if ($candidate -and (Test-Path (Join-Path $candidate "bin\java.exe"))) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate -ErrorAction SilentlyContinue) -and (Test-Path (Join-Path $candidate "bin\java.exe"))) {
             return (Resolve-Path $candidate).Path
         }
     }
 
-    throw "No JDK found. Install Android Studio or set JAVA_HOME to a JDK 17+ installation."
+    throw "No JDK found. Install Android Studio or set JAVA_HOME to a JDK 21+ installation."
 }
 
 function Find-AndroidSdk {

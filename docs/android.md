@@ -1,14 +1,14 @@
 # Android Build and Release
 
 VOID's Android application is a Capacitor shell around the Vite frontend. The UI is packaged into
-the APK; AI requests go to a remote Express API. The phone is not secretly running Node.js in its
+the APK; AI requests go to your Express API, which connects to your model server. The phone is not secretly running Node.js in its
 pocket, which is comforting for several reasons.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    V["Vite build in dist/"] --> C["Capacitor sync"]
+    V["Vite build in dist/client/"] --> C["Capacitor sync"]
     C --> A["Android assets and plugins"]
     A --> G["Gradle build"]
     G --> P["APK or AAB"]
@@ -21,23 +21,20 @@ flowchart LR
 ```text
 appId: com.c728.voidrepodocs
 appName: VOID Repo Docs
-webDir: dist
+webDir: dist/client
 ```
 
-`src/api.ts` uses this default API for native platforms:
-
-```text
-https://void-repository-documents-320691612506.us-west2.run.app
-```
-
-Set `VITE_API_BASE_URL` before building to use another deployment.
+`src/api.ts` uses the VOID backend URL configured in Setup → Server Connection. An optional
+`VITE_API_BASE_URL` supplies a build-time default. There is no built-in hosted service URL.
+Use HTTPS for real devices and supply the server access token when required. See
+[Self-hosting](self-hosting.md) for inference setup and Docker deployment.
 
 ## Requirements
 
 - Node.js and npm.
 - Android Studio.
 - Android SDK platform tools.
-- JDK 17 or newer.
+- JDK 21 or newer.
 - PowerShell.
 
 The helper script searches for Java in:
@@ -106,7 +103,7 @@ npm run build
 npm run cap:sync
 ```
 
-This copies `dist/` into the Android project and refreshes native plugin configuration.
+This copies `dist/client/` into the Android project and refreshes native plugin configuration.
 
 ### Run Gradle
 
@@ -218,18 +215,17 @@ npm run build
 npm run cap:sync
 ```
 
-Because Vite embeds the value at build time, changing `.env` after packaging does precisely nothing,
-which is technically consistent even if emotionally unhelpful.
+Vite embeds the default at build time. Users can change the active backend inside Setup without rebuilding.
 
 ## Common Failures
 
 ### Black screen
 
 - Run `npm run build` before Capacitor sync.
-- Confirm `dist/index.html` exists.
+- Confirm `dist/client/index.html` exists.
 - Run `npm run cap:sync`.
 - Inspect `adb logcat` for WebView errors.
-- Confirm Capacitor `webDir` remains `dist`.
+- Confirm Capacitor `webDir` remains `dist/client`.
 
 ### No Java found
 
@@ -252,8 +248,21 @@ $env:ANDROID_HOME = $env:ANDROID_SDK_ROOT
 
 - Verify the device has internet access.
 - Open the API URL from the device browser.
-- Verify the deployed API has provider keys.
+- Verify the deployed API can reach its model endpoint and requested model.
 - Confirm its CORS allowlist includes `capacitor://localhost`.
 - Rebuild if `VITE_API_BASE_URL` changed.
 
 See [Troubleshooting](troubleshooting.md) for more.
+
+## Native export and web installation
+
+Markdown and Word-compatible `.doc` exports use Capacitor Filesystem cache files and the Android
+share sheet. No external storage permission is required. Native PDF export currently requires
+opening the Word export in a document app and saving it as PDF. Browser PDF export uses printing.
+The web client also supports installation from its manifest and caches its shell for offline access.
+
+## CI build
+
+The `Android debug APK` workflow builds and uploads a debug APK on matching pushes to main,
+matching pull requests, or manual dispatch. It runs lint and tests first. This workflow must be
+pushed to GitHub before it can run; creating the file locally does not produce an APK.

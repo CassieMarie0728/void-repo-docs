@@ -10,7 +10,7 @@ VOID Repo Docs is an AI-powered legal document generation platform for creating 
 - Backend: Express, Node.js runtime, Zod validation
 - Build: esbuild, tsx
 - Markdown/rendering: react-markdown and custom formatting/export utilities
-- LLM providers: Gemini, Mistral, OpenRouter, Groq
+- LLM providers: Self-hosted OpenAI-compatible inference, Mistral, OpenRouter, Groq
 - External APIs: GitHub REST API and Notion API
 
 ## Development Workflow

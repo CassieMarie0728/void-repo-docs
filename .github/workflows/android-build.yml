@@ -1,0 +1,44 @@
+name: Android debug APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['src/**', 'components/**', 'server/**', 'server.ts', 'android/**', 'public/**', 'package*.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'capacitor.config.ts', 'scripts/prepare-web.mjs', '.github/workflows/android-build.yml']
+  pull_request:
+    paths: ['src/**', 'components/**', 'server/**', 'server.ts', 'android/**', 'public/**', 'package*.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'capacitor.config.ts', 'scripts/prepare-web.mjs', '.github/workflows/android-build.yml']
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_API_BASE_URL: ${{ vars.VOID_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npx cap sync android
+      - run: chmod +x android/gradlew
+      - run: ./gradlew assembleDebug
+        working-directory: android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: void-repo-docs-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 3
+          if-no-files-found: error

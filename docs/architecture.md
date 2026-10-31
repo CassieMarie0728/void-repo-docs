@@ -20,7 +20,7 @@ flowchart LR
     R -->|"/api/export-notion"| E
     E --> G["GitHub REST API"]
     E --> M["Mistral API"]
-    E --> X["Gemini API"]
+    E --> X["the self-hosted model API"]
     E --> Q["Groq API"]
     E --> O["OpenRouter API"]
     E --> N["Notion API"]
@@ -37,11 +37,11 @@ flowchart LR
 4. Enables JSON request parsing.
 5. Registers three POST endpoints.
 6. In development, creates Vite in SPA middleware mode.
-7. In production, serves `dist/` and falls back to `dist/index.html`.
+7. In production, serves `dist/client/` and falls back to `dist/client/index.html`.
 8. Listens on `0.0.0.0`.
 
 The production build bundles `server.ts` into CommonJS with esbuild while leaving npm packages
-external. The frontend is independently emitted by Vite into the same `dist/` directory.
+external. The frontend is independently emitted by Vite into the same `dist/client/` directory.
 
 ## Frontend Structure
 
@@ -84,7 +84,7 @@ abstraction has a real boundary, not merely because someone discovered the `hook
 `src/api.ts` creates one Axios instance.
 
 - Browser builds use same-origin requests unless `VITE_API_BASE_URL` is set.
-- Native Capacitor builds default to the deployed Cloud Run API URL.
+- Native Capacitor builds use the server URL saved in Setup, or VITE_API_BASE_URL when configured.
 - A configured `VITE_API_BASE_URL` overrides both.
 
 This separation is what prevents the Android package from asking `capacitor://localhost` to run an
@@ -152,7 +152,7 @@ not secret management. See [Security](security.md).
 
 The Android application is a Capacitor wrapper:
 
-1. Vite emits web assets to `dist/`.
+1. Vite emits web assets to `dist/client/`.
 2. `cap sync android` copies them into the native project and updates plugins.
 3. The Gradle project compiles a standard `BridgeActivity`.
 4. The WebView loads packaged assets.
@@ -179,11 +179,11 @@ These boundaries should drive privacy disclosures, threat modeling, and deployme
 - Request bodies have no explicit size limit beyond Express defaults.
 - Generation requests have no application-level timeout or cancellation.
 - Multi-draft generation uses `Promise.all`; one rejected draft rejects the whole batch.
-- Refinement is Gemini-only.
+- Generation and refinement share the provider router in `server/ai.ts`.
 - Notion conversion is a lightweight line parser capped at 95 blocks.
 - CORS accepts only exact configured origins.
-- No server authentication protects API usage.
-- No rate limiting protects provider spend.
+- VOID_API_TOKEN optionally gates API usage; configure it for remote access.
+- Use a reverse proxy with rate limits for shared deployment. VOID_API_TOKEN gates backend requests when configured.
 
 These are not secret defects. They are the current system boundary and the starting list for serious
 production hardening.

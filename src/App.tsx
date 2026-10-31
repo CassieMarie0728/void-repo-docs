@@ -54,8 +54,11 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
-import { DocumentType, Tone, Length, TargetPlatform, GenRequest, GenResponse } from "./types";
+import { DocumentType, Tone, Length, TargetPlatform, GenRequest, GenResponse, ProviderType } from "./types";
 import { apiClient } from "./api";
+import { exportText } from "./export";
+import { isNative } from "./api";
+import { ServerConnection } from "./components/ServerConnection";
 import { NotionExportDialog } from "./components/NotionExportDialog";
 import { DiffViewer } from "./components/DiffViewer";
 import { ComplianceAudit } from "./components/ComplianceAudit";
@@ -211,9 +214,9 @@ const cleanMarkdownSpacing = (text: string): string => {
 
 export default function App() {
   const [repoUrl, setRepoUrl] = useState("");
-  const [provider, setProvider] = useState<"auto" | "gemini" | "mistral" | "openrouter" | "groq">("auto");
+  const [provider, setProvider] = useState<ProviderType>("openrouter");
   const [customKeys, setCustomKeys] = useState<{
-    gemini: string;
+    selfhosted: string;
     mistral: string;
     openrouter: string;
     groq: string;
@@ -223,7 +226,7 @@ export default function App() {
       if (stored) {
         const parsed = JSON.parse(stored);
         return {
-          gemini: parsed.gemini || "",
+          selfhosted: parsed.selfhosted || "",
           mistral: parsed.mistral || "",
           openrouter: parsed.openrouter || "",
           groq: parsed.groq || ""
@@ -232,7 +235,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-    return { gemini: "", mistral: "", openrouter: "", groq: "" };
+    return { selfhosted: "", mistral: "", openrouter: "", groq: "" };
   });
   const [showSecretKeys, setShowSecretKeys] = useState<Record<string, boolean>>({});
 
@@ -242,12 +245,15 @@ export default function App() {
 
   useEffect(() => {
     const savedProvider = localStorage.getItem("void_selected_provider");
-    if (savedProvider) {
-      setProvider(savedProvider as any);
+    if (["auto", "selfhosted", "mistral", "groq", "openrouter"].includes(savedProvider || "")) {
+      setProvider(savedProvider as ProviderType);
     }
   }, []);
 
-  const handleProviderChange = (newProvider: any) => {
+  const [allowCloudFallback, setAllowCloudFallback] = useState(false);
+
+  const handleProviderChange = (newProvider: ProviderType | null) => {
+    if (!newProvider) return;
     setProvider(newProvider);
     localStorage.setItem("void_selected_provider", newProvider);
   };
@@ -479,6 +485,8 @@ export default function App() {
         instruction: finalInstruction,
         tone: tone,
         customKeys,
+        provider,
+        allowCloudFallback,
       });
 
       if (response.data && response.data.markdown) {
@@ -489,7 +497,7 @@ export default function App() {
       }
     } catch (error: any) {
       console.error(error);
-      const message = error.response?.data?.error || "AI refinement suffered a failure. Try again.";
+      const message = error.response?.data?.error || error.message || "AI refinement suffered a failure. Try again.";
       toast.error(message);
     } finally {
       setIsRefining(false);
@@ -556,6 +564,7 @@ export default function App() {
         versionCount,
         provider,
         customKeys,
+        allowCloudFallback,
         targetPlatform,
         appName,
         appDescription,
@@ -628,22 +637,16 @@ export default function App() {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const textToDownload = displayedMarkdown || (result ? result.markdown : "");
     if (textToDownload && result) {
-      const blob = new Blob([textToDownload], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${result.docType.toLowerCase().replace(/\s+/g, "_")}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      try {
+        await exportText(textToDownload, `${result.docType.toLowerCase().replace(/\s+/g, "_")}.md`, "text/markdown");
+      } catch { toast.error("Export failed. Try sharing the document again."); }
     }
   };
 
-  const handleDownloadDocx = () => {
+  const handleDownloadDocx = async () => {
     if (result) {
       const element = document.querySelector(".markdown-body");
       const htmlContent = element ? element.innerHTML : "";
@@ -672,20 +675,18 @@ ${htmlContent}
 </div>
 </body>
 </html>`;
-      const blob = new Blob([docxHtml], { type: "application/msword" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${result.docType.toLowerCase().replace(/\s+/g, "_")}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("DOCX package drafted. Try not to sign your life away.");
+      try {
+        await exportText(docxHtml, `${result.docType.toLowerCase().replace(/\s+/g, "_")}.doc`, "application/msword");
+        toast.success("Word-compatible document exported.");
+      } catch { toast.error("Word export failed. Try again."); }
     }
   };
 
   const handleDownloadPdf = () => {
+    if (isNative) {
+      toast.info("Share the Word document to a document app to save as PDF on Android.");
+      return;
+    }
     if (!result) return;
     const element = document.querySelector(".markdown-body");
     if (!element) return;
@@ -825,8 +826,8 @@ ${htmlContent}
           </div>
           <div className="flex shrink-0 items-center gap-2 md:gap-4">
             <div className="hidden items-center gap-3 sm:flex">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
-              <span className="hidden text-[10px] text-brand-muted mono-text uppercase tracking-tighter lg:inline">Online (Regrettably)</span>
+              <div className="w-2 h-2 rounded-full bg-brand-muted"></div>
+              <span className="hidden text-[10px] text-brand-muted mono-text uppercase tracking-tighter lg:inline">Your model. Your rules.</span>
             </div>
             <Button 
               variant="ghost" 
@@ -985,7 +986,10 @@ ${htmlContent}
                   </div>
                   <div className="text-center space-y-2">
                     <h3 className="serif-text text-xl italic text-brand-muted">The document remains unwritten.</h3>
-                    <p className="text-[11px] mono-text uppercase tracking-widest opacity-40">Feed the machine on the right.</p>
+                    <p className="text-xs text-brand-muted">Your code. Your voice. Your own damn engine.</p>
+                    <Button variant="outline" onClick={() => { setRightActiveTab("config"); setIsRightSidebarOpen(true); }} className="mt-4 min-h-11 border-brand-border px-5 text-sm">
+                      Set up your document
+                    </Button>
                   </div>
                 </motion.div>
               ) : viewMode === 'preview' ? (
@@ -1061,7 +1065,7 @@ ${htmlContent}
                             className="h-8 border-brand-border hover:bg-brand-accent/10 border font-mono text-[10px]"
                           >
                             <FileText className="w-3 h-3 mr-2" />
-                            GET_DOCX
+                            WORD (.doc)
                           </Button>
                           <Button 
                             variant="outline" 
@@ -1210,7 +1214,7 @@ ${htmlContent}
           >
             {/* Header Tabs Block */}
             <div className="h-14 border-b border-brand-border flex items-center justify-between px-6 bg-black/40 shrink-0 select-none">
-              <div className="flex items-center gap-1 font-mono overflow-x-auto scrollbar-none max-w-[200px]">
+              <div className="flex min-w-0 flex-1 items-center gap-1 font-mono overflow-x-auto scrollbar-none">
                 <button
                   onClick={() => setRightActiveTab("config")}
                   className={`text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 py-4 border-b-2 transition-all shrink-0 ${rightActiveTab === "config" ? "text-brand-accent border-brand-accent font-black" : "text-brand-muted hover:text-white border-transparent"}`}
@@ -1354,7 +1358,7 @@ ${htmlContent}
 
                           <div className="space-y-2">
                             <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Identity Provider</label>
-                            <Select value={authProvider} onValueChange={setAuthProvider}>
+                            <Select value={authProvider} onValueChange={value => { if (value !== null) setAuthProvider(value); }}>
                               <SelectTrigger className="h-10 bg-black/60 border-brand-border text-xs rounded">
                                 <SelectValue />
                               </SelectTrigger>
@@ -1663,18 +1667,24 @@ ${htmlContent}
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-brand-config border-brand-border text-brand-text font-mono">
-                              <SelectItem value="auto" className="text-xs">Auto-Pilot (Dynamic Fallback)</SelectItem>
-                              <SelectItem value="gemini" className="text-xs">Google Gemini (gemini-3.5-flash)</SelectItem>
+                              <SelectItem value="auto" className="text-xs">Auto (self-hosted first)</SelectItem>
+                              <SelectItem value="selfhosted" className="text-xs">Self-hosted model (your server)</SelectItem>
                               <SelectItem value="mistral" className="text-xs">Mistral AI (mistral-large)</SelectItem>
-                              <SelectItem value="openrouter" className="text-xs">OpenRouter (gemini-2.5-flash)</SelectItem>
+                              <SelectItem value="openrouter" className="text-xs">OpenRouter Free (recommended)</SelectItem>
                               <SelectItem value="groq" className="text-xs">Groq (llama-3.3-70b-versatile)</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <p className="text-[8px] font-mono text-brand-muted/40 uppercase tracking-wider leading-relaxed">
-                          Select the backend intelligence engine. "Auto-Pilot" uses platform defaults.
+                          OpenRouter uses free models by default. Each draft or refinement uses a request. Auto is available for self-hosted setups.
                         </p>
                       </div>
+
+                      <label className="flex items-start gap-3 text-xs text-brand-text leading-relaxed">
+                        <input type="checkbox" checked={allowCloudFallback} onChange={e => setAllowCloudFallback(e.target.checked)} className="mt-1 accent-[#981518]" />
+                        <span>Allow cloud fallback in Auto mode. If the local model fails, repository context and drafts may be sent to configured cloud providers.</span>
+                      </label>
+                      <ServerConnection />
 
                       {/* Expandable Key Vault Container */}
                       <div className="p-3 bg-[#0d0d0d]/90 border border-brand-border/30 rounded-lg space-y-3">
@@ -1700,28 +1710,28 @@ ${htmlContent}
                               API credentials are saved purely inside local storage. Bring yours to keep processing uninterrupted.
                             </p>
 
-                            {/* Gemini Input */}
+                            {/* Self-hosted AI Input */}
                             <div className="space-y-1.5">
                               <label className="text-[8.5px] font-mono uppercase text-brand-muted flex items-center justify-between">
-                                <span>Gemini API Key</span>
-                                <span className="text-[7.5px] text-zinc-500 font-mono">Google AI</span>
+                                <span>Self-hosted API Key (optional)</span>
+                                <span className="text-[7.5px] text-zinc-500 font-mono">Server authentication</span>
                               </label>
                               <div className="flex items-center gap-1">
                                 <Input
-                                  type={showSecretKeys.gemini ? "text" : "password"}
-                                  value={customKeys.gemini}
-                                  onChange={(e) => setCustomKeys(prev => ({ ...prev, gemini: e.target.value }))}
-                                  placeholder="AIzaSy..."
+                                  type={showSecretKeys.selfhosted ? "text" : "password"}
+                                  value={customKeys.selfhosted}
+                                  onChange={(e) => setCustomKeys(prev => ({ ...prev, selfhosted: e.target.value }))}
+                                  placeholder="Only if your model server requires a key"
                                   className="h-8 text-[10px] font-mono bg-black/80 border-brand-border/60 focus:border-brand-accent/45 rounded-sm"
                                 />
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   type="button"
-                                  onClick={() => setShowSecretKeys(prev => ({ ...prev, gemini: !prev.gemini }))}
+                                  onClick={() => setShowSecretKeys(prev => ({ ...prev, selfhosted: !prev.selfhosted }))}
                                   className="h-8 w-8 border border-brand-border/45 bg-black/40 hover:bg-white/5 shrink-0"
                                 >
-                                  {showSecretKeys.gemini ? <EyeOff className="w-3.5 h-3.5 text-brand-muted" /> : <Eye className="w-3.5 h-3.5 text-brand-muted" />}
+                                  {showSecretKeys.selfhosted ? <EyeOff className="w-3.5 h-3.5 text-brand-muted" /> : <Eye className="w-3.5 h-3.5 text-brand-muted" />}
                                 </Button>
                               </div>
                             </div>
@@ -1882,7 +1892,7 @@ ${htmlContent}
                   <div className="space-y-6">
                     <div className="space-y-1">
                       <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#981518]">AI SMART REFINER</h3>
-                      <p className="text-[10px] text-brand-muted/50 italic font-serif">Perfect, expand, or adjust with Gemini.</p>
+                      <p className="text-[10px] text-brand-muted/50 italic font-serif">Refine with your selected model.</p>
                     </div>
 
                     {/* Undo option */}
@@ -1976,7 +1986,7 @@ ${htmlContent}
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase font-mono tracking-widest text-brand-muted ml-0.5">Ad-Hoc Directive</label>
                       <textarea
-                        placeholder="Instruct Gemini to mutate the text (e.g. 'Add a GDPR clause', 'Translate intro to Spanish', 'Change Acme to Void Inc'...)"
+                        placeholder="Tell your model how to revise the text (e.g. 'Add a GDPR clause', 'Translate intro to Spanish', 'Change Acme to Void Inc'...)"
                         value={customInstruction}
                         onChange={(e) => setCustomInstruction(e.target.value)}
                         disabled={isRefining || isLoading}

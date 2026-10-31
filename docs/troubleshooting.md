@@ -84,10 +84,9 @@ When the current draft differs from the original, press Forge a second time to c
 
 Configure the selected provider in `.env` or the UI.
 
-Auto mode chooses Mistral first, so a configured Gemini key will only be selected when no Mistral
-key exists.
-
-Restart the development server after editing `.env`.
+Auto uses the self-hosted endpoint first. Check `AI_BASE_URL` and `AI_MODEL`, confirm the
+model is downloaded, and verify that the inference server is running. Cloud credentials alone
+do not enable fallback; turn on the switch or explicitly select a cloud provider.
 
 ## Provider Returns `429`
 
@@ -128,9 +127,9 @@ Web and Android targets can continue with manual app details when repository fet
 
 ## Refinement Fails
 
-Refinement always uses Gemini.
+Refinement uses the current provider and fallback settings.
 
-- Configure `GEMINI_API_KEY` or a Gemini UI key.
+- Check the model endpoint/model name and optional authentication key, or configure your selected cloud provider.
 - Confirm the draft and instruction are non-empty.
 - Reduce document size.
 - Check the server log for model or quota errors.
@@ -164,10 +163,10 @@ Verify:
 Large documents are truncated to 95 blocks. Copy and paste Markdown manually when richer formatting
 or more blocks are required.
 
-## Word Download Is Not a Native DOCX Package
+## Word Download Is Not a Native Word-compatible DOC Package
 
-The export is HTML labeled with a `.docx` extension. Microsoft Word generally opens it, but strict
-Office Open XML validators may reject it. Implement a real DOCX library if native package fidelity
+The export is HTML labeled with a `.doc` extension. Microsoft Word generally opens it, but strict
+Office Open XML validators may reject it. Implement a real Word-compatible DOC library if native package fidelity
 is required.
 
 ## PDF Export Looks Wrong
@@ -203,12 +202,12 @@ Test-Path "$env:ANDROID_SDK_ROOT\platform-tools"
 ## APK Opens to a Black Screen
 
 1. Run `npm run build`.
-2. Confirm `dist/index.html` exists.
+2. Confirm `dist/client/index.html` exists.
 3. Run `npm run cap:sync`.
 4. Rebuild the APK.
 5. Reinstall it with `adb install -r`.
 6. Inspect `adb logcat` for `chromium`, `Capacitor`, and `AndroidRuntime`.
-7. Verify `capacitor.config.ts` uses `webDir: 'dist'`.
+7. Verify `capacitor.config.ts` uses `webDir: 'dist/client'`.
 
 ## Android UI Loads but API Calls Fail
 

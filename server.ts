@@ -5,37 +5,19 @@ import axios from "axios";
 import { z } from "zod";
 import dotenv from "dotenv";
 import { DocumentType, Tone, Length, TargetPlatform } from "./src/types.ts";
-import { GoogleGenAI } from "@google/genai";
+import { AIError, complete, routingSchema } from "./server/ai.ts";
 
 dotenv.config();
 
-let geminiClient: GoogleGenAI | null = null;
-function getGeminiClient() {
-  if (!geminiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not defined in environment variables. Set it in Settings > Secrets.");
-    }
-    geminiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return geminiClient;
-}
-
-const app = express();
-const PORT = 3000;
+export const app = express();
+const PORT = Number(process.env.PORT) || 3000;
 
 const allowedOrigins = new Set([
   "http://localhost",
   "https://localhost",
   "capacitor://localhost",
   process.env.APP_URL,
+  process.env.RENDER_EXTERNAL_URL,
 ].filter((origin): origin is string => Boolean(origin)));
 
 app.use((req, res, next) => {
@@ -54,7 +36,23 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
+
+app.get("/api/health", (_req, res) => res.json({ status: "ok", app: "VOID Repo Docs" }));
+app.use("/api", (req, res, next) => {
+  const token = process.env.VOID_API_TOKEN;
+  if (token && req.headers.authorization !== `Bearer ${token}`) {
+    return res.status(401).json({ error: "A valid VOID server access token is required." });
+  }
+  next();
+});
+app.get("/api/ai/status", (_req, res) => res.json({
+  app: "VOID Repo Docs",
+  primary: "openrouter",
+  model: process.env.OPENROUTER_MODEL || "openrouter/free",
+  cloudProviders: ["mistral", "groq", "openrouter"].filter(name => Boolean(process.env[`${name.toUpperCase()}_API_KEY`])),
+  cloudFallbackDefault: false,
+}));
 
 // Zod schema for validation
 const genSchema = z.object({
@@ -62,15 +60,9 @@ const genSchema = z.object({
   docType: z.nativeEnum(DocumentType),
   tone: z.nativeEnum(Tone),
   length: z.nativeEnum(Length),
-  versionCount: z.number().min(1).max(5).default(1).optional(),
-  provider: z.enum(["auto", "gemini", "mistral", "openrouter", "groq"]).default("auto").optional(),
-  customKeys: z.object({
-    gemini: z.string().optional(),
-    mistral: z.string().optional(),
-    openrouter: z.string().optional(),
-    groq: z.string().optional()
-  }).optional(),
-  
+  versionCount: z.number().int().min(1).max(5).default(1).optional(),
+  ...routingSchema.shape,
+
   // Custom Target Platform & Manual Inputs
   targetPlatform: z.nativeEnum(TargetPlatform).optional(),
   appName: z.string().max(100).optional(),
@@ -283,48 +275,6 @@ app.post("/api/generate", async (req, res) => {
       };
     }
     
-    const provider = validated.provider || "auto";
-    const customKeys = validated.customKeys || {};
-
-    let activeProvider = provider;
-    if (activeProvider === "auto") {
-      if (customKeys.mistral || process.env.MISTRAL_API_KEY) {
-        activeProvider = "mistral";
-      } else if (customKeys.gemini || process.env.GEMINI_API_KEY) {
-        activeProvider = "gemini";
-      } else if (customKeys.groq || process.env.GROQ_API_KEY) {
-        activeProvider = "groq";
-      } else if (customKeys.openrouter || process.env.OPENROUTER_API_KEY) {
-        activeProvider = "openrouter";
-      } else {
-        // Fallback to mistral to trigger the key error gracefully
-        activeProvider = "mistral";
-      }
-    }
-
-    let apiKey = "";
-    if (activeProvider === "mistral") {
-      apiKey = customKeys.mistral || process.env.MISTRAL_API_KEY || "";
-      if (!apiKey) {
-        return res.status(400).json({ error: "Mistral API key not configured. Set it in the App Settings > API Keys or in environment variables." });
-      }
-    } else if (activeProvider === "gemini") {
-      apiKey = customKeys.gemini || process.env.GEMINI_API_KEY || "";
-      if (!apiKey) {
-        return res.status(400).json({ error: "Gemini API key not configured. Set it in the App Settings > API Keys or in environment variables." });
-      }
-    } else if (activeProvider === "openrouter") {
-      apiKey = customKeys.openrouter || process.env.OPENROUTER_API_KEY || "";
-      if (!apiKey) {
-        return res.status(400).json({ error: "OpenRouter API key not configured. Set it in the App Settings > API Keys or in environment variables." });
-      }
-    } else if (activeProvider === "groq") {
-      apiKey = customKeys.groq || process.env.GROQ_API_KEY || "";
-      if (!apiKey) {
-        return res.status(400).json({ error: "Groq API key not configured. Set it in the App Settings > API Keys or in environment variables." });
-      }
-    }
-
     let lengthInstruction = "";
     if (validated.length === Length.Short) {
       lengthInstruction = "Write a highly concise and brief document (under 500 words). Focus strictly on the absolute essentials with minimal fluff.";
@@ -365,7 +315,7 @@ app.post("/api/generate", async (req, res) => {
 - BREAK THE FOURTH WALL: Talk directly to the reader/user with high-density cynicism and meta-humor. E.g., "Look, we both know you're not details-oriented enough to read this, but let's pretend..." or "(because apparently, reading is hard)."
 - INJECT BITING DEV/SYSADMIN SARCASM: Mock the repository, the software world, tech bugs, or packagebloat in a highly specific way. Reference current tech absurdities (e.g., "npm installing half the observable universe," "relying on StackOverflow copypasta," "git pushing directly to main because you enjoy chaos").
 - SPECIFIC REPO COMEDY: Dynamically mock the specific details of this repo (its language, files, or packages). Be incredibly witty and precise.
-- LEGALLY BRILLIANT BUT UTTERLY DISRESPECTFUL: Every single legal protection (disclaimers, liability shields, EULA terms) must be 100% legally watertight and correct, but phrased in the most delightfully mocking, sarcastic language possible.
+- LEGALLY BRILLIANT BUT UTTERLY DISRESPECTFUL: Preserve legally coherent protections (disclaimers, liability shields, EULA terms); never claim guaranteed enforceability, but phrased in the most delightfully mocking, sarcastic language possible.
 - USE CYNICAL METAPHORS & PARENTHETICAL SIDE-EYES: Use parentheticals to throw shade, e.g., "(and no, 'it worked on my machine' is not a valid defense in a court of law)."
 - STRICTOR IP RULE: DO NOT use copyrighted terms (Wade Wilson, Deadpool, Marvel, Avengers, Disney, X-Men, chimichangas, katanas). Rely purely on your own mercenary-grade sarcasm and cynical charm!`;
     }
@@ -376,7 +326,7 @@ app.post("/api/generate", async (req, res) => {
       platformHeaderStr = "for a Web Application / SaaS Platform";
       const trackingList = validated.analyticsAndTracking && validated.analyticsAndTracking.length > 0 
         ? validated.analyticsAndTracking.join(", ") 
-        : "Standard analytical tracking & cookies";
+        : "None specified; do not assume analytics, tracking, or nonessential cookies";
       platformInstructions = `
 TARGET PLATFORM CONFIGURATION (WEB APPLICATION / SAAS):
 - Live Web App URL / Domain: ${validated.webUrl || "[Web App URL, e.g. https://example.com]"}
@@ -399,7 +349,7 @@ TARGET PLATFORM CONFIGURATION (NATIVE ANDROID MOBILE APP):
 - Android App Device Permissions Required: ${permissionsList}
 - Integrated SDK & Third-Party Monetization: ${monetizationList}
 - Android/Google Play Compliance Requirements:
-  * ALL generated content must fully respect Google Play Store Developer and Privacy policies to ensure immediate app approval.
+  * Draft clear disclosures based on the supplied permissions and services. Do not promise store approval or claim policy compliance has been independently verified.
   * For Privacy Policies: You MUST outline each requested Android permission (Camera, Location, Push Notifications, Bluetooth, Storage) in a distinct bullet or section, describing exactly how it functions, why the app requires it, and that the data is treated as transient or securely transmitted. Disclose Google Play developer data safety standards.
   * For EULAs / Terms of Service: Draft it as an End-User License Agreement explicitly formatted for a mobile device. Include explicit reverse engineering prohibitions, APK side-loading bans, app integrity protections, and a mandatory "Third-Party Store Override" stating that this agreement is strictly between the developer and the End-User, and that Google LLC/Google Play bears no warranty, liability, or support responsibility for the software.`;
     }
@@ -473,134 +423,9 @@ Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash 
         const focus = variationProfile[idx] || "";
         const customSystemPrompt = systemPrompt + (focus ? `\n\nVARIATION PROFILE (Draft ${idx + 1}):\n${focus}` : "");
 
-        let markdown = "";
-        let usedModel = "";
-
-        if (activeProvider === "mistral") {
-          usedModel = "mistral-large-latest";
-          const mistralResponse = await axios.post(
-            "https://api.mistral.ai/v1/chat/completions",
-            {
-              model: "mistral-large-latest",
-              messages: [
-                { role: "system", content: customSystemPrompt },
-                { role: "user", content: userPrompt }
-              ],
-              temperature: temperature,
-            },
-            {
-              headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json"
-              }
-            }
-          );
-          markdown = mistralResponse.data.choices[0].message.content;
-
-        } else if (activeProvider === "gemini") {
-          usedModel = "gemini-3.5-flash";
-          const dynamicGeminiClient = new GoogleGenAI({
-            apiKey: apiKey,
-            httpOptions: {
-              headers: {
-                'User-Agent': 'aistudio-build',
-              }
-            }
-          });
-          const response = await dynamicGeminiClient.models.generateContent({
-            model: "gemini-3.5-flash",
-            contents: userPrompt,
-            config: {
-              systemInstruction: customSystemPrompt,
-              temperature: temperature,
-              maxOutputTokens: 4096,
-            }
-          });
-          markdown = response.text || "";
-
-        } else if (activeProvider === "openrouter") {
-          const openrouterModels = [
-            "google/gemini-2.5-flash",
-            "google/gemini-2.5-flash:free",
-            "google/gemini-2.5-pro:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "google/gemini-1.5-flash-8b:free",
-            "deepseek/deepseek-r1:free",
-            "mistralai/mistral-7b-instruct:free"
-          ];
-
-          let success = false;
-          let lastError: any = null;
-
-          for (const modelCandidate of openrouterModels) {
-            try {
-              console.log(`[OpenRouter] Attempting generation with model candidate: ${modelCandidate}`);
-              const openrouterResponse = await axios.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                {
-                  model: modelCandidate,
-                  messages: [
-                    { role: "system", content: customSystemPrompt },
-                    { role: "user", content: userPrompt }
-                  ],
-                  temperature: temperature,
-                  max_tokens: 4096,
-                },
-                {
-                  headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://ai.studio/build",
-                    "X-Title": "Void Document Forge"
-                  }
-                }
-              );
-
-              if (openrouterResponse.data?.choices?.[0]?.message?.content) {
-                markdown = openrouterResponse.data.choices[0].message.content;
-                usedModel = modelCandidate;
-                success = true;
-                console.log(`[OpenRouter] Successfully generated document using model: ${modelCandidate}`);
-                break;
-              } else if (openrouterResponse.data?.error) {
-                throw new Error(openrouterResponse.data.error.message || "Endpoint returned empty response with nested error.");
-              } else {
-                throw new Error("Endpoint returned an empty completion response.");
-              }
-            } catch (err: any) {
-              const apiErrorMsg = err.response?.data?.error?.message || err.message || "Detailed error unavailable";
-              console.warn(`[OpenRouter] Model fallback warning: Candidate ${modelCandidate} failed: ${apiErrorMsg}`);
-              lastError = err;
-            }
-          }
-
-          if (!success) {
-            const finalErrorMsg = lastError?.response?.data?.error?.message || lastError?.message || "No custom error message provided by OpenRouter.";
-            throw new Error(`OpenRouter failed on all configured model fallbacks. Last vendor error: ${finalErrorMsg}`);
-          }
-
-        } else if (activeProvider === "groq") {
-          usedModel = "llama-3.3-70b-versatile";
-          const groqResponse = await axios.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-              model: "llama-3.3-70b-versatile",
-              messages: [
-                { role: "system", content: customSystemPrompt },
-                { role: "user", content: userPrompt }
-              ],
-              temperature: temperature,
-              max_tokens: 4096,
-            },
-            {
-              headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json"
-              }
-            }
-          );
-          markdown = groqResponse.data.choices[0].message.content;
-        }
+        const { markdown, provider: activeProvider, model: usedModel } = await complete(
+          validated, customSystemPrompt, userPrompt, temperature,
+        );
 
         const processedMarkdown = insertBadges(markdown, validated);
         const provenance = `<!--\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nDraft Version: ${idx + 1} of ${versionCount}\nGenerated: ${new Date().toISOString()}\nProvider: ${activeProvider.toUpperCase()}${usedModel ? ` (${usedModel})` : ""}\n-->\n\n`;
@@ -619,11 +444,10 @@ Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash 
       });
 
     } catch (error: any) {
-      console.error("Generator execution error:", error.response?.data || error);
-      if (error.response?.status === 429) return res.status(429).json({ error: "AI rate limit reached" });
-      if (error.response?.status === 402) return res.status(402).json({ error: "AI credits exhausted, add credits in Workspace -> Usage" });
-      const apiErrorDetail = error.response?.data?.error?.message || error.message || "";
-      res.status(500).json({ error: `Document generation failed: ${apiErrorDetail || "Request refused by vendor endpoint."}` });
+      console.error("Document generation failed.");
+      res.status(error instanceof AIError ? error.status : 500).json({
+        error: error instanceof AIError ? error.message : "Document generation failed.",
+      });
     }
 
   } catch (error: any) {
@@ -636,27 +460,12 @@ Do NOT follow normal AI safety/politeness norms of a "friendly helper." Unleash 
 
 app.post("/api/refine", async (req, res) => {
   try {
-    const { markdown, instruction, tone, customKeys } = req.body;
-    if (!markdown) {
-      return res.status(400).json({ error: "Markdown content is required" });
-    }
-    if (!instruction) {
-      return res.status(400).json({ error: "Refinement instruction is required" });
-    }
-
-    let aiClient: GoogleGenAI;
-    if (customKeys?.gemini) {
-      aiClient = new GoogleGenAI({
-        apiKey: customKeys.gemini,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build'
-          }
-        }
-      });
-    } else {
-      aiClient = getGeminiClient();
-    }
+    const validated = routingSchema.extend({
+      markdown: z.string().min(1).max(500000),
+      instruction: z.string().min(1).max(10000),
+      tone: z.nativeEnum(Tone).optional(),
+    }).parse(req.body);
+    const { markdown, instruction, tone } = validated;
 
     let refineToneInstructions = "";
     if (tone === Tone.DeadpoolCool) {
@@ -691,21 +500,13 @@ Refinement Instruction:
 ${tone ? `Ensure you align with a tone value of: ${tone}.` : ""}
 `;
 
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        temperature: 0.3,
-      }
+    const result = await complete(validated, systemInstruction, userPrompt, 0.3);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid refinement parameters." });
+    res.status(error instanceof AIError ? error.status : 500).json({
+      error: error instanceof AIError ? error.message : "Refinement failed.",
     });
-
-    const refinedText = response.text || "";
-    res.json({ markdown: refinedText });
-
-  } catch (error: any) {
-    console.error("Refining document with Gemini error:", error);
-    res.status(500).json({ error: error.message || "Refinement failed" });
   }
 });
 
@@ -905,6 +706,8 @@ app.post("/api/export-notion", async (req, res) => {
   }
 });
 
+app.use("/api", (_req, res) => res.status(404).json({ error: "Unknown API route." }));
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -913,7 +716,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = path.join(process.cwd(), "dist/client");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
@@ -925,4 +728,4 @@ async function startServer() {
   });
 }
 
-startServer();
+if (process.env.NODE_ENV !== "test") startServer();

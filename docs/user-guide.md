@@ -133,16 +133,12 @@ profiles:
 
 ## Select a Provider
 
-Choose Auto, Gemini, Mistral, Groq, or OpenRouter. Auto selects the first configured provider in
-this order:
+Choose Auto, Self-hosted, Mistral, Groq, or OpenRouter. Auto uses your own model server.
+Enable **Allow cloud fallback** to try configured Mistral, Groq, then OpenRouter after a local
+failure. This permits repository context and drafts to leave your server. Explicit provider
+selection uses only that provider. The same selection applies to refinement and audit fixes.
 
-1. Mistral
-2. Gemini
-3. Groq
-4. OpenRouter
-
-Keys entered in the UI override server environment keys for that request. See
-[AI Providers](ai-providers.md) before deciding where secrets should live.
+See [AI Providers](ai-providers.md) before deciding where secrets should live.
 
 ## Work With Drafts
 
@@ -174,7 +170,7 @@ button press from vaporizing local work.
 
 ## Refine and Format
 
-The AI Refiner uses Gemini, even when the original document came from another provider.
+The AI Refiner uses the current provider selection and cloud-fallback setting.
 
 Presets include:
 
@@ -220,7 +216,7 @@ The audit is heuristic, not a legal engine. It searches the current Markdown for
 - Contact information.
 - Acceptance or effective-date language.
 
-Missing checks can trigger specialized Gemini refinement prompts. Passing a keyword check proves
+Missing checks can trigger specialized AI refinement prompts. Passing a keyword check proves
 that relevant words exist, not that the clause is valid in your jurisdiction. A spellchecker can
 find "indemnification"; it cannot represent you in court.
 
@@ -236,7 +232,7 @@ Downloads a `.md` file named from the document class.
 
 ### Word-compatible document
 
-Creates an HTML document with Microsoft Office namespaces and downloads it with a `.docx`
+Creates an HTML document with Microsoft Office namespaces and downloads it with a `.doc`
 extension. This is Word-compatible HTML, not a zipped Office Open XML package.
 
 ### PDF

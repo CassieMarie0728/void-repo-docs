@@ -1,3 +1,6 @@
+> **Free web + Android deployment:** VOID defaults to `openrouter/free`.
+> Host the app on Render Free and build APKs with GitHub Actions.
+> Start with [the free deployment guide](docs/free-deployment.md).
 # VOID (Voice of Intense Disdain): Repo Documents: Because Lawyers Charge by the Hour and Your Sanity Isn't Billable
 
 <p align="center">
@@ -216,7 +219,7 @@ Here’s what *might* happen in the future (no promises):
 - **Integration with CI/CD**: So your legal documents update automatically when you push new code. Because who doesn’t love automation?
 - **More Document Types** – Because why stop at boring legal docs? How about AI-generated cease-and-desist letters? *Too far?*
 - **Better Customization** – One size does *not* fit all.
-- **Integration with More AI Models** – Gemini is cool, but variety is the spice of life.
+- **Integration with More AI Models** – Self-hosted first, with opt-in cloud fallback.
 
 </div>
 
@@ -304,7 +307,7 @@ A: You could accidentally write a clause that says "the user must forfeit their 
 - **The Open Source Community**: For making it possible to build cool things without selling my soul.
 - **My Lawyers:** Who are probably reading this and shaking their heads. Hi, guys!
 - **TypeScript**: For saving me from JavaScript’s "everything is a string" hellscape.
-- **Google’s Gemini API**: For doing the heavy lifting so I don’t have to and for not crashing *every* time I ask it to generate a Privacy Policy.
+- **Your model server**: Local-first generation and refinement, with optional cloud backup.
 - **The lawyers who review this stuff**: May your coffee be strong and your billable hours plentiful.
 - **Red Bull**: The real MVP.
 
@@ -352,7 +355,7 @@ And remember: **this tool is free, but your mistakes aren’t**. Use it wisely.
 
 <div align="center">
   <p><em>VOID Repo Docs: Because even code needs a prenup.</em></p>
-  <p><a href="https://void-repository-documents-320691612506.us-west2.run.app/">Visit the VOID</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs">Star This Repo</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs/issues">Report a Bug</a></p>
+  <p><a href="docs/self-hosting.md">Host your own VOID</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs">Star This Repo</a> | <a href="https://github.com/CassieMarie0728/void-repo-docs/issues">Report a Bug</a></p>
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CassieMarie0728/void-repo-docs)
 

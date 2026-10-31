@@ -51,7 +51,7 @@ Generation sends the selected provider:
 - User-entered application descriptions.
 - Tracking, authentication, permissions, and monetization selections.
 
-Refinement sends the entire current Markdown document to Gemini.
+Refinement sends the current Markdown document to the selected model. Auto keeps it self-hosted unless cloud fallback is explicitly enabled.
 
 Do not use confidential repositories or sensitive legal drafts without confirming the provider's
 data handling, retention, contractual terms, and organizational approval.
@@ -70,10 +70,10 @@ The API accepts arbitrary GitHub URLs matching its parser. Consider:
 
 ## API Exposure
 
-The API has no authentication, rate limit, quota, CSRF token, or per-user authorization.
+VOID_API_TOKEN provides optional shared-token authentication. The API has no rate limit, quota, or per-user authorization.
 
 If publicly reachable with paid provider keys, anyone who can call it can consume those credentials'
-quota. Protect it with an authenticated gateway or implement application authentication.
+quota. Set VOID_API_TOKEN and protect shared deployments with a gateway that enforces user identity and quotas.
 
 ## CORS
 
@@ -123,7 +123,7 @@ it. Clear the saved value after use on shared devices.
 
 ## Logging Risks
 
-Current error logging may include vendor response objects. Providers can echo request details.
+AI errors log routing metadata only. Other integration errors should still be reviewed before exposing logs.
 Production logging should redact:
 
 - Authorization headers.
@@ -155,10 +155,10 @@ API and a small bag of broken exports.
 
 ## Hardening Priority
 
-1. Add API authentication and rate limiting.
+1. Configure the API access token and add rate limiting.
 2. Move user secrets out of persistent browser storage.
 3. Add Zod schemas to all endpoints.
-4. Add provider and GitHub request timeouts.
+4. Keep the provider timeout configured; add GitHub request timeouts.
 5. Add structured redacted logging.
 6. Add a restrictive Content Security Policy.
 7. Add request size limits.

@@ -1,18 +1,20 @@
-@import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss" source(none);
+@source "./";
+@source "../components";
+
 
 @theme {
   --font-serif: "Special Elite", serif;
   --font-sans: "Courier New", Courier, monospace;
   --font-mono: "JetBrains Mono", monospace;
 
-  --color-brand-bg: #0a0a0a;
+  --color-brand-bg: #0b0f0f;
   --color-brand-sidebar: #050505;
   --color-brand-config: #070707;
   --color-brand-accent: #981518;
   --color-brand-text: #e0e0e0;
-  --color-brand-muted: #666666;
+  --color-brand-muted: #a8a9ad;
   --color-brand-border: #1a1a1a;
 }
 
@@ -30,9 +32,13 @@ body {
   font-family: var(--font-mono);
 }
 
-button, .button, select, input, option, a, blockquote, h1, h2, h3, h4, h5, h6, .serif-text {
+blockquote, h1, h2, h3, h4, h5, h6, .serif-text {
   font-family: var(--font-serif) !important;
 }
+
+button, select, input, option { font-family: var(--font-sans); }
+label { font-size: 11px !important; line-height: 1.5; }
+[class*="text-[7"], [class*="text-[8"], [class*="text-[9"] { font-size: 11px; line-height: 1.5; }
 
 .markdown-body {
   @apply max-w-none space-y-4;
@@ -387,3 +393,16 @@ button, .button, select, input, option, a, blockquote, h1, h2, h3, h4, h5, h6, .
   background-color: rgba(152, 21, 24, 0.6);
 }
 
+
+/* Fit Android edge-to-edge windows and mobile keyboards. */
+html, body, #root { height: 100%; margin: 0; }
+#root > div { height: 100dvh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+input, textarea, button { touch-action: manipulation; }
+:focus-visible { outline: 2px solid #a8a9ad; outline-offset: 3px; }
+@media (max-width: 767px) {
+  input, textarea, select { font-size: 16px !important; }
+  button { min-height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

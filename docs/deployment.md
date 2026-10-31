@@ -1,5 +1,7 @@
 # Deployment and Operations
 
+For the recommended Render Free deployment, use [the free deployment guide](free-deployment.md).
+
 The production artifact contains a static Vite client and a bundled Express server. It needs a
 Node.js host capable of listening on port `3000`, outbound HTTPS access, and environment secrets.
 
@@ -22,8 +24,9 @@ Output:
 
 ```text
 dist/
-|-- assets/
-|-- index.html
+|-- client/
+|   |-- assets/
+|   `-- index.html
 |-- server.cjs
 `-- server.cjs.map
 ```
@@ -35,11 +38,11 @@ $env:NODE_ENV = "production"
 npm start
 ```
 
-In production mode, Express serves `dist/` and returns `index.html` for unmatched routes.
+In production mode, Express serves `dist/client/` and returns `index.html` for unmatched non-API routes. Unknown API routes return JSON 404.
 
 ## Environment
 
-Required: at least one generation provider key.
+Required: a reachable OpenAI-compatible model endpoint and a downloaded model. Cloud keys are optional. See [Self-hosting](self-hosting.md).
 
 Recommended:
 
@@ -47,7 +50,10 @@ Recommended:
 NODE_ENV=production
 APP_URL=https://app.example.com
 GITHUB_TOKEN=
-GEMINI_API_KEY=
+AI_BASE_URL=http://127.0.0.1:11434/v1
+AI_MODEL=llama3.2:3b
+AI_API_KEY=
+VOID_API_TOKEN=
 MISTRAL_API_KEY=
 GROQ_API_KEY=
 OPENROUTER_API_KEY=
@@ -67,8 +73,7 @@ The host must:
 - Inject secrets at runtime.
 - Terminate TLS before public traffic reaches the application.
 
-The server currently ignores a platform-provided `PORT` environment variable. Hosts that require a
-dynamic port need a code change before deployment.
+The server uses `PORT` when configured and defaults to 3000.
 
 ## Separate Frontend and API
 
@@ -96,22 +101,16 @@ Unknown origins receive no access-control headers.
 
 ## Health and Readiness
 
-No health endpoint currently exists. Production platforms can probe `/`, but that only verifies
-static serving, not provider credentials or external connectivity.
-
-A proper deployment should add:
-
-- `/api/health` for process readiness.
-- Optional dependency checks with short timeouts.
-- Build/version metadata.
-- A response that never leaks secret values.
+`GET /api/health` reports process liveness. `GET /api/ai/status` reports model configuration
+and configured cloud provider names; it does not perform inference or expose keys. Other API
+routes require `Authorization: Bearer <VOID_API_TOKEN>` when a token is configured.
 
 ## Logging
 
 Current logs are plain console output:
 
 - Server startup.
-- OpenRouter candidate attempts and failures.
+- AI provider attempts that failed (provider name and status only).
 - GitHub fallback warnings.
 - Provider generation errors.
 - Notion export errors.
@@ -134,7 +133,7 @@ Constraints:
 
 - Each multi-draft request can create up to five parallel provider calls.
 - No rate limiter or concurrency limiter exists.
-- No timeout aborts slow provider requests.
+- Each model attempt has a timeout controlled by AI_TIMEOUT_MS.
 - No queue smooths bursts.
 - API keys are shared across all users when configured server-side.
 
@@ -147,8 +146,8 @@ inviting the internet to discover your billing ceiling.
 2. Run `npm run lint`.
 3. Run `npm run build`.
 4. Start the production bundle locally.
-5. Test all three API endpoints.
-6. Verify the intended provider keys exist.
+5. Test health, AI configuration, generation, refinement and export routes.
+6. Verify the model endpoint and model are ready; verify any optional cloud credentials.
 7. Verify `APP_URL`.
 8. Verify TLS and secret injection.
 9. Confirm logs do not expose credentials.

@@ -1,5 +1,10 @@
-# Android Documentation
+# Android Build
 
-See [`docs/android.md`](docs/android.md) for the canonical build and release guide.
+See [Android build and release](docs/android.md) and [self-hosted backend setup](docs/self-hosting.md).
 
-For failure diagnosis, see [`docs/troubleshooting.md`](docs/troubleshooting.md).
+```powershell
+npm install
+npm run android:apk
+```
+
+Requires Android Studio, Android SDK, and JDK 21+. Set your backend URL in the app’s Setup panel.

@@ -345,7 +345,7 @@ export function ComplianceAudit({ markdown, isRefining, onAutoFix }: ComplianceA
                       <span>{rule.missingFailureTip}</span>
                     </div>
 
-                    {/* Gemini Instant Fix Trigger */}
+                    {/* AI Instant Fix Trigger */}
                     <Button
                       size="sm"
                       disabled={isRefining}
@@ -353,7 +353,7 @@ export function ComplianceAudit({ markdown, isRefining, onAutoFix }: ComplianceA
                       className="w-full h-7 text-[9px] font-mono uppercase bg-brand-accent hover:bg-brand-accent/90 text-white rounded flex items-center justify-center gap-1.5 tracking-wider active:scale-95"
                     >
                       <Sparkles className="w-3 h-3 text-brand-bg fill-white animate-pulse" />
-                      {isRefining ? "FORTIFYING INTEGRITY..." : "AUTO-FIX WITH GEMINI"}
+                      {isRefining ? "FORTIFYING INTEGRITY..." : "AUTO-FIX WITH AI"}
                     </Button>
                   </div>
                 )}

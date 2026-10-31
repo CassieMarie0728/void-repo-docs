@@ -60,8 +60,8 @@ VOID currently contains:
 - One React single-page application.
 - One Express server on port `3000`.
 - Three JSON API endpoints.
-- Four generation providers.
-- One Gemini-only refinement path.
+- Self-hosted inference plus three optional cloud providers.
+- One shared router for generation, refinement, and audit fixes.
 - Fifteen document types.
 - Six tone profiles.
 - Three target platform profiles.

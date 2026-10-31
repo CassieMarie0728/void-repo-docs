@@ -143,7 +143,7 @@ Clearing site data removes all of them. There is no cloud synchronization.
 - Express.
 - Axios.
 - Zod.
-- Google GenAI.
+- OpenAI-compatible HTTP.
 - Capacitor.
 - Motion.
 - React Markdown.
