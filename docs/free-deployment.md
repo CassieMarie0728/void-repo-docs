@@ -48,6 +48,9 @@ store distribution still requires your release signing configuration.
 - OpenRouter requests do not fall back to other providers, including when the Auto fallback
   checkbox is enabled. Exhausted free capacity returns an error instead.
 - Each draft is a separate request; refinements and AI audit fixes also use requests.
+- The output allowance defaults to 16,384 tokens (`AI_MAX_TOKENS`). OpenRouter requests use low
+  reasoning effort to leave room for the document. Long targets 1,500–2,500 words; model-specific
+  limits can still truncate a response, and incomplete output is rejected rather than exported.
 - The router chooses the actual free model, so output quality and availability can vary. When
   OpenRouter returns the resolved model name, generated-document provenance records that model.
 - The router can select Google-origin models. Removing the Gemini SDK does not exclude every

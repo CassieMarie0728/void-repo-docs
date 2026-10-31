@@ -28,6 +28,7 @@ test('local completion uses admin endpoint/model and omits Authorization without
   assert.equal(calls[0][1].messages[1].content, 'draft');
   assert.equal(calls[0][2].headers.Authorization, undefined);
   assert.equal(calls[0][2].maxRedirects, 0);
+  assert.equal(calls[0][1].reasoning, undefined);
 });
 
 test('a local failure never contacts cloud with default privacy settings', async () => {
@@ -89,8 +90,20 @@ test('default requests go straight to OpenRouter Free without local or paid-prov
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], 'https://openrouter.ai/api/v1/chat/completions');
   assert.equal(calls[0][1].model, 'openrouter/free');
+  assert.equal(calls[0][1].max_tokens, 16384);
+  assert.deepEqual(calls[0][1].reasoning, { effort: 'low' });
   assert.equal(result.model, 'actual-free-model');
   assert.equal(result.provider, 'openrouter');
+});
+
+test('configured output allowance is honored and reasoning-only truncation has an actionable error', async () => {
+  await assert.rejects(complete({ provider: 'openrouter' }, 'system', 'draft', 0.5, {
+    env: { OPENROUTER_API_KEY: 'free-key', AI_MAX_TOKENS: '20000' },
+    post: (async (_url: string, body: any) => {
+      assert.equal(body.max_tokens, 20000);
+      return { data: { choices: [{ message: { content: '' }, finish_reason: 'length' }] } };
+    }) as any,
+  }), /output limit before finishing/);
 });
 
 test('OpenRouter failure does not switch to a paid provider even when fallback is enabled', async () => {

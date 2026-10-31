@@ -71,7 +71,9 @@ export async function complete(
         model: engine.model,
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
         temperature,
-        max_tokens: Number(env.AI_MAX_TOKENS) || 4096,
+        max_tokens: Number(env.AI_MAX_TOKENS) || 16384,
+        // Leave most of the output allowance for the document, including on reasoning models.
+        ...(engine.provider === "openrouter" ? { reasoning: { effort: "low" } } : {}),
         stream: false,
       }, {
         timeout: Number(env.AI_TIMEOUT_MS) || 120000,
@@ -83,10 +85,10 @@ export async function complete(
         },
       });
       const markdown = response.data?.choices?.[0]?.message?.content;
-      if (typeof markdown !== "string" || !markdown.trim()) throw new AIError("The model returned an empty document.");
       if (response.data?.choices?.[0]?.finish_reason === "length") {
-        throw new AIError("The model truncated the document. Increase AI_MAX_TOKENS or request a shorter draft.");
+        throw new AIError("The model hit its output limit before finishing. The incomplete draft was not saved. Retry the request or choose a different model.");
       }
+      if (typeof markdown !== "string" || !markdown.trim()) throw new AIError("The model returned an empty document.");
       return { markdown, provider: engine.provider, model: typeof response.data.model === "string" ? response.data.model : engine.model };
     } catch (error) {
       if (error instanceof AIError && error.status === 400) throw error;

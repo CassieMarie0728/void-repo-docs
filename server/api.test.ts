@@ -7,6 +7,7 @@ import { DocumentType, Tone, Length, TargetPlatform } from '../src/types.ts';
 test('HTTP generation, refinement, authentication and validation', async () => {
   process.env.NODE_ENV = 'test';
   process.env.VOID_API_TOKEN = 'test-access';
+  process.env.AI_MAX_TOKENS = '16384';
   const requests: any[] = [];
   const model = createServer(async (req, res) => {
     let body = '';
@@ -34,6 +35,7 @@ test('HTTP generation, refinement, authentication and validation', async () => {
     assert.equal(configuration.app, 'VOID Repo Docs');
     assert.equal(configuration.model, 'openrouter/free');
     assert.equal(configuration.primary, 'openrouter');
+    assert.equal(configuration.outputTokenLimit, 16384);
     assert.equal((await post('/api/refine', { markdown: 123, instruction: 'edit' })).status, 400);
     assert.equal((await post('/api/refine', { markdown: 'draft', instruction: 'edit', provider: 'gemini' })).status, 400);
     const input = { provider: 'selfhosted', targetPlatform: TargetPlatform.WebApp, appName: 'Test App', docType: DocumentType.Readme, tone: Tone.Professional, length: Length.Short, versionCount: 2 };

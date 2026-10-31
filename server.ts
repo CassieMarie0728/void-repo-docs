@@ -50,6 +50,7 @@ app.get("/api/ai/status", (_req, res) => res.json({
   app: "VOID Repo Docs",
   primary: "openrouter",
   model: process.env.OPENROUTER_MODEL || "openrouter/free",
+  outputTokenLimit: Number(process.env.AI_MAX_TOKENS) || 16384,
   cloudProviders: ["mistral", "groq", "openrouter"].filter(name => Boolean(process.env[`${name.toUpperCase()}_API_KEY`])),
   cloudFallbackDefault: false,
 }));
@@ -281,7 +282,7 @@ app.post("/api/generate", async (req, res) => {
     } else if (validated.length === Length.Medium) {
       lengthInstruction = "Write a comprehensive standard-length document (800 to 1200 words) with balanced, well-rounded sections.";
     } else if (validated.length === Length.Long) {
-      lengthInstruction = "Write an extremely detailed, high-density, exhaustively full document (at least 1500 to 2500 words) with exhaustive sections, comprehensive disclaimers, multiple subheadings, and detailed explanations of all features/aspects. Do NOT summarize or truncate any code blocks, tables, FAQs, or disclaimers; expand on every topic with depth.";
+      lengthInstruction = "Write a detailed, complete document of 1500 to 2500 words. Stay within 2500 words. Cover all relevant sections, legal protections, and practical explanations thoroughly within that budget. Use code blocks, tables, and FAQs only where relevant, and always finish every section and the final disclaimer. Avoid repetition and padding.";
     }
 
     let toneInstructions = "";
