@@ -28,7 +28,8 @@ unverified. Jokes can use obvious metaphor, but cannot fabricate factual project
 
 Runtime checks catch two narrow, verifiable error classes:
 
-- Referenced package scripts that do not exist in the loaded `package.json`.
+- Explicit npm/pnpm script invocations and namespaced script aliases that do not exist in the
+  loaded `package.json`. Ambiguous built-ins, dependency binaries and file execution are not rejected.
 - Drizzle schema examples incompatible with an explicit dialect in loaded Drizzle config.
 
 A detected contradiction triggers one correction request on the same provider route. This uses
@@ -36,8 +37,11 @@ one additional model request per affected draft. If it remains inconsistent, the
 422 rather than saving the draft. A normal draft uses one request; there is no unbounded repair
 loop and no new paid-provider fallback.
 
-Refinement requests can include `repoUrl` to reload the source snapshot. The UI sends the original
-result's repository URL. Without a repository, refinement has only the existing draft and explicit
+Refinement requests can include `repoUrl` to reload the source snapshot. Generation returns an
+`evidenceRepoUrl` separately from the requested URL; it is empty when generation used manual
+fallback. The UI persists this field and supplies only the evidence URL to refinement, keeping
+manual-fallback drafts refinable when their optional repository is unavailable.
+Without a repository, refinement has only the existing draft and explicit
 user instructions; those draft claims are not treated as independently verified facts.
 
 ## Limits

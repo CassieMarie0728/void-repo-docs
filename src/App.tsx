@@ -347,6 +347,7 @@ export default function App() {
         if (parsed && parsed.markdown) {
           setResult({
             repo: parsed.repoUrl || "",
+            evidenceRepoUrl: parsed.evidenceRepoUrl,
             docType: parsed.docType || DocumentType.Readme,
             tone: parsed.tone || Tone.Professional,
             length: parsed.length || Length.Medium,
@@ -430,6 +431,7 @@ export default function App() {
         markdown: editedMarkdown,
         originalMarkdown,
         docType: result.docType,
+        evidenceRepoUrl: result.evidenceRepoUrl,
         repoUrl,
         tone,
         length,
@@ -482,7 +484,7 @@ export default function App() {
     try {
       const response = await apiClient.post<{ markdown: string }>("/api/refine", {
         markdown: editedMarkdown,
-        repoUrl: result?.repo || "",
+        repoUrl: result?.evidenceRepoUrl ?? result?.repo ?? "",
         instruction: finalInstruction,
         tone: tone,
         customKeys,
@@ -593,6 +595,7 @@ export default function App() {
         markdown: resultsArray[0],
         originalMarkdown: resultsArray[0],
         docType: response.data.docType,
+        evidenceRepoUrl: response.data.evidenceRepoUrl,
         repoUrl,
         tone,
         length,

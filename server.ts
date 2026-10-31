@@ -402,6 +402,7 @@ Unleash sharp snark, brilliant meta-cynicism, and fourth-wall breaks. Keep every
 
       res.json({
         repo: validated.repoUrl,
+        evidenceRepoUrl: repoContext.revision ? validated.repoUrl || "" : "",
         docType: validated.docType,
         tone: validated.tone,
         length: validated.length,

@@ -24,12 +24,17 @@ export function evidencePrompt(context: RepositoryContext): string {
 export function auditGrounding(markdown: string, context: RepositoryContext): string[] {
   const issues = new Set<string>();
   const scripts = context.packageJson?.scripts;
-  const builtins = new Set(['install', 'i', 'add', 'remove', 'uninstall', 'update', 'upgrade', 'exec', 'dlx', 'init', 'create', 'run', 'audit', 'config', 'cache', 'list', 'why', 'help']);
   const fragments = [...markdown.matchAll(/```[^\n]*\n([\s\S]*?)```|`([^`\n]+)`/g)].map(match => match[1] || match[2]);
   for (const fragment of fragments) {
-    for (const match of fragment.matchAll(/\b(?:(npm\s+run|bun\s+run)\s+|(pnpm|yarn)(?:\s+run)?\s+)([\w][\w:.-]*)/g)) {
-      const name = match[3];
-      if (scripts && !builtins.has(name) && !Object.hasOwn(scripts, name)) issues.add(`The command script "${name}" is not declared in package.json. Omit it or use an actual script.`);
+    const candidates: string[] = [];
+    for (const match of fragment.matchAll(/\b(npm|pnpm|yarn|bun)\s+run\s+([\w][\w:.-]*)/g)) {
+      // Yarn and Bun can execute dependency binaries/files as well as scripts.
+      if (['npm', 'pnpm'].includes(match[1]) || match[2].includes(':')) candidates.push(match[2]);
+    }
+    for (const match of fragment.matchAll(/\b(?:pnpm|yarn)\s+([\w][\w:.-]*:[\w:.-]+)/g)) candidates.push(match[1]);
+    // Bare words may be built-ins (outdated/workspace) or dependency binaries (tsc).
+    for (const name of candidates) {
+      if (scripts && !Object.hasOwn(scripts, name)) issues.add(`The command script "${name}" is not declared in package.json. Omit it or use an actual script.`);
     }
   }
   const dialects = context.sources.filter(source => /(?:^|\/)drizzle\.config\.[cm]?[jt]s$/.test(source.path))

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parse as parseEnvironment } from 'dotenv';
 
 export interface RepositorySource {
   path: string;
@@ -72,7 +73,10 @@ export async function fetchRepoInfo(owner: string, repo: string, dependencies: {
         const { data: blob } = await get(`${base}/git/blobs/${entry.sha}`, options);
         if (blob.encoding !== 'base64') throw new Error('Unsupported file encoding');
         let content = Buffer.from(blob.content.replace(/\s/g, ''), 'base64').toString('utf8');
-        if (/^\.env\./.test(path)) content = content.replace(/^([A-Za-z_][A-Za-z0-9_]*\s*=).*$/gm, '$1[configure privately]');
+        if (/^\.env\./.test(path)) {
+          // dotenv handles exported, indented and multiline quoted assignments. Keep names only.
+          content = Object.keys(parseEnvironment(content)).map(name => `${name}=[configure privately]`).join('\n');
+        }
         return { path, content, truncated: false };
       } catch { notes.push(`${path}: could not be read; its contents are unknown.`); return null; }
     }));

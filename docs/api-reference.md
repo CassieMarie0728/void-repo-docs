@@ -247,3 +247,10 @@ Without those controls, a public endpoint connected to paid AI keys is less "ser
 Returns the app identifier, default provider (`openrouter`), model (`openrouter/free` unless
 configured otherwise), configured cloud provider names, and fallback default. Requires the
 server access token when configured. Does not perform a model call or expose credentials.
+
+### Evidence URL in generation responses
+
+`evidenceRepoUrl` identifies the repository actually used as evidence. It is empty when generation
+used manual app details, including fallback after an optional repository could not be read. Clients
+should use this field for repository-backed refinement rather than the original requested `repo`.
+Persist the distinction when saving a draft. Older responses without the field retain legacy behavior.

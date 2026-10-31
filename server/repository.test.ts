@@ -11,7 +11,7 @@ test('a repo snapshot reads actual deployment/schema/auth evidence, with timeout
     'server/worker.ts': 'export default { fetch(request, env) { return env.DB.prepare("SELECT 1"); } };',
     'drizzle/schema.ts': 'import { sqliteTable } from "drizzle-orm/sqlite-core";',
     'server/_core/oauth.ts': 'const authUrl = "https://github.com/login/oauth/authorize";',
-    '.env.example': 'JWT_SECRET=do-not-send-this-value\nPUBLIC_URL=https://example.test',
+    '.env.example': 'JWT_SECRET=do-not-send-this-value\n export API_TOKEN=exported-private-token\n  INDENTED_SECRET=indented-private-token\nPRIVATE_KEY="first-secret-line\nSENSITIVEBASE64=\nlast-secret-line"\nPUBLIC_URL=https://example.test',
   };
   const paths = Object.keys(files);
   const calls: string[] = [];
@@ -34,6 +34,14 @@ test('a repo snapshot reads actual deployment/schema/auth evidence, with timeout
   assert.ok(context.sources.find(source => source.path.endsWith('oauth.ts'))?.content.includes('github.com/login'));
   assert.equal(context.packageJson?.dependencies.mysql2, 'legacy');
   assert.ok(!JSON.stringify(context.sources).includes('do-not-send-this-value'));
+  const environment = context.sources.find(source => source.path === '.env.example')!.content;
+  assert.match(environment, /API_TOKEN=\[configure privately\]/);
+  assert.match(environment, /INDENTED_SECRET=\[configure privately\]/);
+  assert.match(environment, /PRIVATE_KEY=\[configure privately\]/);
+  assert.ok(!environment.includes('exported-private-token'));
+  assert.ok(!environment.includes('indented-private-token'));
+  assert.ok(!environment.includes('secret-line'));
+  assert.ok(!environment.includes('SENSITIVEBASE64'));
   assert.ok(calls.every(url => url.startsWith('https://api.github.com/repos/example/project')));
   assert.ok(context.sources.reduce((size, source) => size + source.content.length, 0) <= 36000);
 });

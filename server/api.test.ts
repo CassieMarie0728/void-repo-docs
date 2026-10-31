@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import axios from 'axios';
 import { DocumentType, Tone, Length, TargetPlatform } from '../src/types.ts';
 
 test('HTTP generation, refinement, authentication and validation', async () => {
@@ -54,6 +55,17 @@ test('HTTP generation, refinement, authentication and validation', async () => {
     assert.equal(requests.length, 3);
     assert.ok(requests.every(request => request.url === '/v1/chat/completions' && request.model === 'test-model'));
     assert.equal((await fetch(base + '/api/missing', { headers: { Authorization: 'Bearer test-access' } })).status, 404);
+    const previousGet = axios.get;
+    try {
+      axios.get = (async () => { throw new Error('Repository unavailable'); }) as typeof axios.get;
+      const manualResponse = await post('/api/generate', { ...input, versionCount: 1, repoUrl: 'https://github.com/example/unavailable' });
+      assert.equal(manualResponse.status, 200);
+      const manualDraft = await manualResponse.json();
+      assert.equal(manualDraft.repo, 'https://github.com/example/unavailable');
+      assert.equal(manualDraft.evidenceRepoUrl, '');
+      const manualRefinement = await post('/api/refine', { markdown: manualDraft.markdown, instruction: 'Improve clarity', provider: 'selfhosted', repoUrl: manualDraft.evidenceRepoUrl });
+      assert.equal(manualRefinement.status, 200);
+    } finally { axios.get = previousGet; }
   } finally {
     await Promise.all([
       new Promise<void>((resolve, reject) => backend.close(error => error ? reject(error) : resolve())),

@@ -49,7 +49,12 @@ test('a consistent draft costs one call; a contradictory draft gets at most one 
 test('repeated contradictions are rejected rather than returned as a polished lie', async () => {
   let calls = 0;
   await assert.rejects(groundedComplete({ provider: 'openrouter' }, context, 'system', 'write', 0.85,
-    (async () => { calls++; return { markdown: 'Run `pnpm nonexistent-script`.', provider: 'openrouter', model: 'free' }; }) as any),
+    (async () => { calls++; return { markdown: 'Run `pnpm run nonexistent-script`.', provider: 'openrouter', model: 'free' }; }) as any),
     (error: any) => error.status === 422 && /not saved/.test(error.message));
   assert.equal(calls, 2);
+});
+
+test('built-ins and binary execution are not mistaken for missing scripts', () => {
+  assert.deepEqual(auditGrounding('Use `pnpm outdated`, `yarn workspace api build`, `pnpm tsc`, `yarn run eslint`, or `bun run server.ts`.', context), []);
+  assert.equal(auditGrounding('Run `pnpm run outdated` or `npm run install`.', context).length, 2);
 });
