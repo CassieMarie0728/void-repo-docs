@@ -127,6 +127,7 @@ export interface GenRequest {
 
 export interface GenResponse {
   repo: string;
+  evidenceRepoUrl?: string;
   docType: string;
   tone: string;
   length: string;

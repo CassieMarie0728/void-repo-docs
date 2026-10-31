@@ -187,3 +187,10 @@ These boundaries should drive privacy disclosures, threat modeling, and deployme
 
 These are not secret defects. They are the current system boundary and the starting list for serious
 production hardening.
+
+## Repository evidence and factual grounding
+
+`server/repository.ts` resolves a commit snapshot and loads bounded, relevant source blobs from
+GitHub. `server/grounding.ts` supplies fact-first writing rules and checks known script/dialect
+contradictions. One repair call is allowed; persistent contradictions fail with 422. Generation
+and repository-backed refinement share this path. See [Grounding](grounding.md) for limits.

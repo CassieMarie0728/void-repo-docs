@@ -72,15 +72,15 @@ Generates one to five Markdown drafts.
 
 ### Repository context
 
-When `repoUrl` is present, the server parses GitHub owner and repository names and requests:
+When `repoUrl` is present, the backend resolves the default branch to a commit and reads its
+file inventory plus a bounded set of source blobs. Deployment config, explicit database dialect,
+runtime entry point, schema, auth, and routing evidence take precedence over dependency guesses.
+Unreadable or partial evidence is marked unknown. Snapshots are cached for five minutes.
 
-- `/repos/{owner}/{repo}`
-- `/repos/{owner}/{repo}/readme`
-- `/repos/{owner}/{repo}/license`
-- `/repos/{owner}/{repo}/contents/package.json`
-
-README and license fetches can fail independently and become empty context. Failure of the repository
-metadata request fails repository-mode generation.
+See [Source grounding](grounding.md) for file/size limits, request costs, and validation limits.
+A detected script/dialect contradiction permits one correction attempt. Repeated contradictions
+return 422; no inconsistent draft is returned. Optional `repoUrl` on `/api/refine` supplies the
+same evidence to refinement; the existing draft alone is not independently verified evidence.
 
 ### Response
 
@@ -247,3 +247,10 @@ Without those controls, a public endpoint connected to paid AI keys is less "ser
 Returns the app identifier, default provider (`openrouter`), model (`openrouter/free` unless
 configured otherwise), configured cloud provider names, and fallback default. Requires the
 server access token when configured. Does not perform a model call or expose credentials.
+
+### Evidence URL in generation responses
+
+`evidenceRepoUrl` identifies the repository actually used as evidence. It is empty when generation
+used manual app details, including fallback after an optional repository could not be read. Clients
+should use this field for repository-backed refinement rather than the original requested `repo`.
+Persist the distinction when saving a draft. Older responses without the field retain legacy behavior.

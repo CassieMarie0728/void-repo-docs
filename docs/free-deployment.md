@@ -48,6 +48,8 @@ store distribution still requires your release signing configuration.
 - OpenRouter requests do not fall back to other providers, including when the Auto fallback
   checkbox is enabled. Exhausted free capacity returns an error instead.
 - Each draft is a separate request; refinements and AI audit fixes also use requests.
+- Repository drafts use [source grounding](grounding.md). Detected script/dialect contradictions
+  allow one correction request per affected draft, consuming one additional free request.
 - The output allowance defaults to 16,384 tokens (`AI_MAX_TOKENS`). OpenRouter requests use low
   reasoning effort to leave room for the document. Long targets 1,500–2,500 words; model-specific
   limits can still truncate a response, and incomplete output is rejected rather than exported.
