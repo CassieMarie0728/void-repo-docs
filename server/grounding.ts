@@ -28,7 +28,7 @@ export function auditGrounding(markdown: string, context: RepositoryContext): st
   const issues = new Set<string>();
   // Ignore examples and provenance comments; legitimate citations/limitations remain allowed.
   const prose = markdown.replace(/<!--[\s\S]*?-->|```[\s\S]*?```|`[^`\n]+`/g, ' ');
-  const selfCertification = /\b(?:all|every)\s+(?:(?:technical|oauth|api)\s+)?(?:claims?|procedures?|commands?|steps?|table\/column names and types)\b[^.!?\n]{0,100}\b(?:grounded|verbatim|derived from|from evidence)\b|\bno\s+(?:invented|hallucinated)\s+(?:api\s+)?(?:scopes?|endpoints?|columns?|commands?|prerequisites?|(?:minor\s+)?versions?|facts?|token formats?)\b|\bI\s+(?:won['’]t|will not|am not|['’]m not)\s+(?:invent|hallucinat)\w*/i;
+  const selfCertification = /\b(?=[^\n]{0,240}\b(?:evidence|sources?|snapshot|package\.json)\b)(?:all|every)\s+(?:(?:technical|oauth|api)\s+)?(?:claims?|procedures?|commands?|steps?|table\/column names and types)\b[^.!?\n]{0,100}\b(?:grounded|verbatim|derived from|from evidence)\b|\bno\s+(?:invented|hallucinated)\s+(?:api\s+)?(?:scopes?|endpoints?|columns?|commands?|prerequisites?|(?:minor\s+)?versions?|facts?|token formats?)\b|\bI\s+(?:won['’]t|will not|am not|['’]m not)\s+(?:invent|hallucinat)\w*/i;
   if (selfCertification.test(prose)) issues.add('Remove model self-certification and instruction-following commentary from reader-facing prose (for example, "all claims grounded" or "no invented endpoints"). Keep useful source citations and specific limitations; return only the document.');
   const scripts = context.packageJson?.scripts;
   const fragments = [...markdown.matchAll(/```[^\n]*\n([\s\S]*?)```|`([^`\n]+)`/g)].map(match => match[1] || match[2]);

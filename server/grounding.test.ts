@@ -69,6 +69,10 @@ test('reported self-certification is rejected while source citations and limitat
   assert.deepEqual(auditGrounding('See [OAuth](server/_core/oauth.ts). The supplied schema excerpt ends here.\n<!-- No invented endpoints -->\n```text\nNo invented endpoints\n```', context), []);
 });
 
+test('ordinary legal claims clauses are not model self-certification', () => {
+  assert.deepEqual(auditGrounding('All claims derived from this Agreement shall be subject to binding arbitration. All claims grounded in this Agreement must be filed within the applicable limitation period.', context), []);
+});
+
 test('self-commentary gets one repair and repeated self-certification fails closed', async () => {
   let calls = 0;
   const route = { provider: 'openrouter' as const };
