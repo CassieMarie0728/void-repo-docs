@@ -26,13 +26,22 @@ invented measurements, commands, APIs, schemas, auth providers, required service
 claims about security, compliance or production readiness. Unknowns must be omitted or marked
 unverified. Jokes can use obvious metaphor, but cannot fabricate factual project measurements.
 
-Runtime checks catch two narrow, verifiable error classes:
+Writing rules also prohibit publishing the model's instruction-following commentary. Useful
+source citations and specific evidence limitations belong in the document; repeated claims such
+as "all claims grounded" and "no invented endpoints" do not. README guidance favors actionable
+setup and concise architecture over package inventories. Cross-section consistency and precise
+security claims are prompt requirements, not a complete automated semantic audit.
+
+Runtime checks catch these narrow error classes:
 
 - Explicit npm/pnpm script invocations and namespaced script aliases that do not exist in the
   loaded `package.json`. Ambiguous built-ins, dependency binaries and file execution are not rejected.
 - Drizzle schema examples incompatible with an explicit dialect in loaded Drizzle config.
+- Recognizable self-certification phrases in prose. Code fences, inline code and HTML provenance
+  comments are excluded; ordinary citations and specific limitations remain allowed. This is
+  phrase detection, not a guarantee that every form of model commentary will be caught.
 
-A detected contradiction triggers one correction request on the same provider route. This uses
+A detected issue triggers one correction request on the same provider route. This uses
 one additional model request per affected draft. If it remains inconsistent, the endpoint returns
 422 rather than saving the draft. A normal draft uses one request; there is no unbounded repair
 loop and no new paid-provider fallback.

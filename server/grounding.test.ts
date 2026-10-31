@@ -58,3 +58,30 @@ test('built-ins and binary execution are not mistaken for missing scripts', () =
   assert.deepEqual(auditGrounding('Use `pnpm outdated`, `yarn workspace api build`, `pnpm tsc`, `yarn run eslint`, or `bun run server.ts`.', context), []);
   assert.equal(auditGrounding('Run `pnpm run outdated` or `npm run install`.', context).length, 2);
 });
+
+test('reported self-certification is rejected while source citations and limitations survive', () => {
+  for (const draft of [
+    '*(All OAuth procedures grounded in `server/_core/oauth.ts` and `server/routers.ts` evidence. No invented scopes, endpoints, or token formats beyond what is declared.)*',
+    'All claims grounded in package.json evidence.',
+    'No hallucinated minor versions.',
+    "I won't hallucinate missing columns.",
+  ]) assert.equal(auditGrounding(draft, context).length, 1, draft);
+  assert.deepEqual(auditGrounding('See [OAuth](server/_core/oauth.ts). The supplied schema excerpt ends here.\n<!-- No invented endpoints -->\n```text\nNo invented endpoints\n```', context), []);
+});
+
+test('self-commentary gets one repair and repeated self-certification fails closed', async () => {
+  let calls = 0;
+  const route = { provider: 'openrouter' as const };
+  const run = (async (options: unknown, _system: string, prompt: string) => {
+    assert.equal(options, route);
+    calls++;
+    if (calls === 1) return { markdown: 'All claims grounded in evidence.', provider: 'openrouter', model: 'free' };
+    assert.match(prompt, /self-certification/);
+    return { markdown: '# Project\nSee `server/worker.ts` for routing.', provider: 'openrouter', model: 'free' };
+  }) as any;
+  assert.match((await groundedComplete(route, context, 'system', 'write', 0.85, run)).markdown, /# Project/);
+  assert.equal(calls, 2);
+  await assert.rejects(groundedComplete(route, context, 'system', 'write', 0.85,
+    (async () => ({ markdown: 'No invented endpoints.', provider: 'openrouter', model: 'free' })) as any),
+    (error: any) => error.status === 422 && /not saved/.test(error.message));
+});
