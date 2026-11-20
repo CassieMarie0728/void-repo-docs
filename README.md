@@ -10,6 +10,8 @@
   <em>VOID Repo Docs: Ignorance of the law is no excuse... but it’s a great defense strategy.</em>
 </p>
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CassieMarie0728/void-repo-docs)
+
 ---
 
 ## What Fresh Legal Hell Is This?
