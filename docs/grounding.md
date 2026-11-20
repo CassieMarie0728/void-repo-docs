@@ -53,6 +53,19 @@ manual-fallback drafts refinable when their optional repository is unavailable.
 Without a repository, refinement has only the existing draft and explicit
 user instructions; those draft claims are not treated as independently verified facts.
 
+## Deadpool-cool voice
+
+Generation and refinement share the editorial profile in `server/tone.ts`. It uses original
+contrast examples to demonstrate conversational explanations, useful analogies and occasional
+asides. Humor targets software friction while keeping the reader on the writer's side.
+READMEs should explain capabilities and benefits, user workflow, and verified setup before
+optional technical detail. The editor's **Sharpen the Snark** action follows the same direction.
+
+Style examples are not repository evidence: their features, technologies, commands, ownership,
+contact details and licenses must never transfer into another project's document. Factual and
+legal constraints still outrank tone. This is prompt calibration, not a deterministic guarantee
+of humor quality; compare generated outputs with the intended voice during review.
+
 ## Limits
 
 These controls reduce hallucinations; they are not a comprehensive fact-checker. Uninspected

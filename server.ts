@@ -8,6 +8,7 @@ import { DocumentType, Tone, Length, TargetPlatform } from "./src/types.ts";
 import { AIError, routingSchema } from "./server/ai.ts";
 import { fetchRepoInfo } from "./server/repository.ts";
 import { GROUNDING_RULES, evidencePrompt, groundedComplete } from "./server/grounding.ts";
+import { DEADPOOL_COOL_VOICE } from "./server/tone.ts";
 
 dotenv.config();
 
@@ -280,15 +281,7 @@ app.post("/api/generate", async (req, res) => {
 - Be extremely relaxed, cozy, and stress-free. Let things slide.
 - Simplify all standard warning labels and legalese. Present information with low-stress, good-natured vibes.`;
     } else if (validated.tone === Tone.DeadpoolCool) {
-      toneInstructions = `TONE INSTRUCTIONS (Deadpool-cool):
-- YOU ARE AN ABSOLUTELY UNHINGED, DELIGHTFULLY SARCASTIC, TECH-SAVVY LEGAL MERCENARY playing the character of a legendary writer.
-- TRASH THE TRADITIONAL "AI ASSISTANT" PERSONA: Drop all friendly, polite, repetitive, or helpful chatter. Be an active smartass.
-- BREAK THE FOURTH WALL: Talk directly to the reader/user with high-density cynicism and meta-humor. E.g., "Look, we both know you're not details-oriented enough to read this, but let's pretend..." or "(because apparently, reading is hard)."
-- INJECT BITING DEV/SYSADMIN SARCASM: Mock the repository, the software world, tech bugs, or packagebloat in a highly specific way. Reference current tech absurdities (e.g., "npm installing half the observable universe," "relying on StackOverflow copypasta," "git pushing directly to main because you enjoy chaos").
-- SPECIFIC REPO COMEDY: Dynamically mock the specific details of this repo (its language, files, or packages). Be incredibly witty and precise.
-- LEGALLY BRILLIANT BUT UTTERLY DISRESPECTFUL: Preserve legally coherent protections (disclaimers, liability shields, EULA terms); never claim guaranteed enforceability, but phrased in the most delightfully mocking, sarcastic language possible.
-- USE CYNICAL METAPHORS & PARENTHETICAL SIDE-EYES: Use parentheticals to throw shade, e.g., "(and no, 'it worked on my machine' is not a valid defense in a court of law)."
-- STRICTOR IP RULE: DO NOT use copyrighted terms (Wade Wilson, Deadpool, Marvel, Avengers, Disney, X-Men, chimichangas, katanas). Rely purely on your own mercenary-grade sarcasm and cynical charm!`;
+      toneInstructions = DEADPOOL_COOL_VOICE;
     }
 
     let platformInstructions = "";
@@ -346,7 +339,7 @@ IMPORTANT RULES:
    - If the requested document type is NOT structurally relevant to the actual project (for example, requesting a 'MODEL_CARD.md', 'BIAS_AND_FAIRNESS.md', 'DATASET_CARD.md', 'TRAINING.md', 'EVALUATION.md', 'PROMPT_ENGINEERING.md', or 'INFERENCE.md' for a project that has absolutely NO machine learning, AI, LLMs, neural networks, or data science features; or requesting a 'CITATIONS.cff' for a standard commercial or consumer app with no academic/research background), YOU MUST NOT make up or hallucinate a fake document with dummy metrics or fictional training configurations.
    - INSTEAD of a hallucinated document, you MUST generate a "Document Relevancy Notice" explaining clearly why this document type is not relevant to their current project.
    - This notice MUST be generated in the EXACT requested tone ("${validated.tone}"):
-     * For Deadpool-cool: Make it highly sarcastic, breaking the fourth wall, hilariously mocking the request (e.g., asking why they want AI model training logs or academic citations for a standard web app, database, or API), while still explaining wittily what projects actually need this document.
+     * For Deadpool-cool: Explain the mismatch with wit aimed at unnecessary paperwork, then explain which projects actually need this document. Keep the reader on your side.
      * For Formal/Professional: Issue a structured, highly dignified, respectful business notice notifying the developer that their project lacks AI model components or academic research metrics, and explaining what criteria would necessitate this document.
      * For Friendly/Casual/Laid-back: Issue a warm, cozy, or clear friendly notice explaining that this document is not applicable to the current codebase and why, and inviting them to add features that would make it meaningful.
    - The output for an irrelevant document MUST start with a clear main markdown header like "# Document Relevancy Notice: ${validated.docType}" or equivalent. Do NOT output any introductory chatter or post-generation notes.
@@ -357,18 +350,8 @@ ${evidencePrompt(repoContext)}
 `;
 
     let userPrompt = `Generate a ${validated.docType} for the repository "${repoContext.fullName}" in ${validated.tone} tone and ${validated.length} length.`;
-    if (validated.tone === Tone.DeadpoolCool) {
-      if (validated.targetPlatform === TargetPlatform.AndroidApp) {
-        userPrompt = `URGENT MANDATE: Generate a mobile-app ${validated.docType} draft for the Native Android Mobile Application "${repoContext.fullName}" (${validated.packageName || "com.example.app"}). Unleash ultimate "Deadpool-cool" style: be unhinged, hilariously cynical, break the 4th wall, make fun of Google's policy compliance or the users, but keep the legal terms coherent and do not claim verified compliance. Length Target: ${validated.length}.`;
-      } else if (validated.targetPlatform === TargetPlatform.WebApp) {
-        userPrompt = `URGENT MANDATE: Generate a web-app ${validated.docType} draft for the Web Application "${repoContext.fullName}" (${validated.webUrl || "https://example.com"}). Unleash ultimate "Deadpool-cool" style: sarcastically mock browser tracking, cookies, legal agreements, and the fact that absolutely no one reads these, but keep the legal terms coherent without claiming guaranteed enforceability. Length Target: ${validated.length}.`;
-      } else {
-        userPrompt = `URGENT MANDATE: Generate a ${validated.docType} for the repository "${repoContext.fullName}". You are commanded to craft an absolute masterpiece of raw, high-attitude "Deadpool-cool" style. 
-
-Unleash sharp snark, brilliant meta-cynicism, and fourth-wall breaks. Keep every technical claim tied to supplied evidence and preserve legally coherent draft terms. Humor must never fabricate repository facts. Under no circumstances should you sound like a standard academic template. Length Target: ${validated.length}.`;
-      }
-    } else if (validated.targetPlatform === TargetPlatform.AndroidApp || validated.targetPlatform === TargetPlatform.WebApp) {
-      userPrompt = `Generate a ${validated.docType} for the application "${repoContext.fullName}" (Target Context: ${validated.targetPlatform === TargetPlatform.AndroidApp ? "Android Play Store app" : "Web app"}). Match this target context carefully in the generated document structure. Length Target: ${validated.length}.`;
+    if (validated.targetPlatform === TargetPlatform.AndroidApp || validated.targetPlatform === TargetPlatform.WebApp) {
+      userPrompt = `Generate a ${validated.docType} for the application "${repoContext.fullName}" (Target Context: ${validated.targetPlatform === TargetPlatform.AndroidApp ? "Android Play Store app" : "Web app"}). Match this target context and the ${validated.tone} tone profile carefully. Length Target: ${validated.length}.`;
     }
 
     const versionCount = validated.versionCount || 1;
@@ -445,13 +428,7 @@ app.post("/api/refine", async (req, res) => {
 
     let refineToneInstructions = "";
     if (tone === Tone.DeadpoolCool) {
-      refineToneInstructions = `
-CRITICAL TONE MANDATE FOR REFINE (Deadpool-cool):
-- Rewrite or edit the input markdown with maximum sarcastic, meta-humorous, and fourth-wall-breaking Deadpool-cool attitude.
-- Be delightfully disrespectful about software practices, developers, and licensing while preserving legally coherent draft terms. Do not claim guaranteed enforceability.
-- Use witty annotations, cynical analogies, and parenthetical side-eyes.
-- Drop all generic AI politeness or normal template phrasing. No boring prose or academic safety pads!
-- DO NOT use copyrighted names (No "Deadpool", "Marvel", "Avengers", "Wade Wilson", "chimichangas", etc.). Maintain your own unique, high-octane snark.`;
+      refineToneInstructions = DEADPOOL_COOL_VOICE;
     }
 
     const systemInstruction = `You are Void's AI Refiner, playing the character of an elite technical/legal writer and a masterful markdown advisor.
