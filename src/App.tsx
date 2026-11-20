@@ -1948,13 +1948,13 @@ ${htmlContent}
                         <Button
                           variant="outline"
                           disabled={isRefining || isLoading}
-                          onClick={() => handleRefine("Unshackle Deadpool-level cynic energy: rewrite the draft to inject maximum dark sarcasm, corporate satire, and dry witty commentary about user legal agreements.")}
+                          onClick={() => handleRefine("Rewrite with sharp developer humor, vivid analogies, and playful asides while clearly explaining what this project does and how to use it. Keep the reader on your side, preserve supported facts and legal meaning, and remove repetitive audit commentary or filler.")}
                           className="justify-start text-left h-auto py-2 px-3 border-brand-border/60 hover:border-[#981518]/40 hover:bg-white/5 text-[10px] font-mono"
                         >
                           <span className="text-brand-accent text-xs font-mono mr-2">🤡</span>
                           <div className="flex flex-col select-none">
-                            <span className="text-white hover:text-brand-accent leading-none font-bold">CYNICAL OVERLOAD</span>
-                            <span className="text-[8px] text-brand-muted font-mono tracking-widest mt-0.5">Maximum witty dry humor</span>
+                            <span className="text-white hover:text-brand-accent leading-none font-bold">SHARPEN THE SNARK</span>
+                            <span className="text-[8px] text-brand-muted font-mono tracking-widest mt-0.5">Useful explanations. Sharper punchlines.</span>
                           </div>
                         </Button>
 

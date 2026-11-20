@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import axios from 'axios';
 import { DocumentType, Tone, Length, TargetPlatform } from '../src/types.ts';
+import { DEADPOOL_COOL_VOICE } from './tone.ts';
 
 test('HTTP generation, refinement, authentication and validation', async () => {
   process.env.NODE_ENV = 'test';
@@ -54,6 +55,14 @@ test('HTTP generation, refinement, authentication and validation', async () => {
     assert.equal((await refined.json()).provider, 'selfhosted');
     assert.equal(requests.length, 3);
     assert.ok(requests.every(request => request.url === '/v1/chat/completions' && request.model === 'test-model'));
+    const snarkDraft = await post('/api/generate', { ...input, tone: Tone.DeadpoolCool, versionCount: 1 });
+    assert.equal(snarkDraft.status, 200);
+    const snarkRefinement = await post('/api/refine', { markdown: (await snarkDraft.json()).markdown, instruction: 'Sharpen the humor', tone: Tone.DeadpoolCool, provider: 'selfhosted' });
+    assert.equal(snarkRefinement.status, 200);
+    for (const request of requests.slice(-2)) {
+      assert.ok(request.messages[0].content.includes(DEADPOOL_COOL_VOICE));
+      assert.doesNotMatch(request.messages.map((message: any) => message.content).join('\n'), /URGENT MANDATE|UTTERLY DISRESPECTFUL|maximum sarcastic/);
+    }
     assert.equal((await fetch(base + '/api/missing', { headers: { Authorization: 'Bearer test-access' } })).status, 404);
     const previousGet = axios.get;
     try {
