@@ -70,3 +70,34 @@ test('partial inventories and unreadable files are marked unknown rather than in
   assert.match(context.evidenceNotes.join(' '), /partial file inventory/);
   assert.match(context.evidenceNotes.join(' '), /could not be read/);
 });
+
+test('badge-only React projects include product implementation instead of only metadata', () => {
+  const paths = ['package.json', 'README.md', '.env.example', 'src/App.tsx', 'src/main.tsx', 'src/components/AndroidHub.tsx', 'node_modules/pkg/components/Secret.tsx', 'dist/components/Bundle.tsx'];
+  const selected = selectEvidencePaths(paths);
+  assert.ok(selected.includes('src/App.tsx'));
+  assert.ok(selected.includes('src/components/AndroidHub.tsx'));
+  assert.ok(!selected.some(path => /node_modules|dist\//.test(path)));
+});
+
+test('full-stack evidence keeps runtime, dialect, auth and database alongside UI', () => {
+  const paths = ['package.json', 'README.md', 'client/src/App.tsx', 'client/src/pages/Dashboard.tsx', 'client/src/components/FrontMatterEditor.tsx', 'wrangler.jsonc', 'drizzle.config.ts', 'server/worker.ts', 'drizzle/schema.ts', 'server/_core/oauth.ts', 'server/db.ts', 'server/routers.ts'];
+  const selected = selectEvidencePaths([...paths, 'client/src/components/DashboardLayout.tsx', 'client/src/components/DashboardLayoutSkeleton.tsx']);
+  for (const path of paths) assert.ok(selected.includes(path), path);
+  assert.equal(selected.length, 12);
+});
+
+test('large early files cannot consume the entire source budget', async () => {
+  const files: Record<string, string> = { 'package.json': JSON.stringify({ scripts: { dev: 'vite' }, description: 'x'.repeat(14000) }), 'src/App.tsx': 'x'.repeat(14000), 'src/components/Editor.tsx': 'x'.repeat(14000), 'src/pages/Dashboard.tsx': 'x'.repeat(14000), 'README.md': 'x'.repeat(14000), 'wrangler.jsonc': 'x'.repeat(14000), 'drizzle.config.ts': 'x'.repeat(14000), 'server/worker.ts': 'x'.repeat(14000), 'drizzle/schema.ts': 'x'.repeat(14000), 'server/_core/oauth.ts': 'x'.repeat(14000), 'server/db.ts': 'actual database evidence', 'server/routers.ts': 'actual route evidence' };
+  const paths = Object.keys(files);
+  const get = (async (url: string) => {
+    if (url.includes('/commits/')) return { data: { sha: 'snapshot', commit: { tree: { sha: 'tree' } } } };
+    if (url.includes('/git/trees/')) return { data: { tree: paths.map((path, i) => ({ type: 'blob', path, sha: String(i), size: files[path].length })) } };
+    if (url.includes('/git/blobs/')) return { data: { encoding: 'base64', content: Buffer.from(files[paths[Number(url.split('/').at(-1))]]).toString('base64') } };
+    return { data: { full_name: 'example/project', default_branch: 'main' } };
+  }) as any;
+  const context = await fetchRepoInfo('example', 'project', { get });
+  assert.equal(context.sources.length, 12);
+  assert.ok(context.sources.every(source => source.content.length > 0));
+  assert.ok(context.sources.reduce((size, source) => size + source.content.length, 0) <= 36000);
+  assert.equal(context.sources.find(source => source.path === 'server/db.ts')?.content, 'actual database evidence');
+});

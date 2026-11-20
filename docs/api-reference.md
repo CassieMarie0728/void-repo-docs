@@ -97,7 +97,7 @@ same evidence to refinement; the existing draft alone is not independently verif
 }
 ```
 
-Every draft starts with an HTML comment containing document type, repository URL, tone, length,
+Narrative drafts start with an HTML comment containing document type, repository URL, tone, length,
 draft number, generation timestamp, provider, and model.
 
 ### Error examples
@@ -124,6 +124,7 @@ Rewrites Markdown using the shared provider router and the requested provider/fa
 {
   "markdown": "# Existing document",
   "instruction": "Add a GDPR data-subject rights section.",
+  "docType": "Privacy Policy",
   "tone": "Professional",
   "customKeys": {
     "selfhosted": ""
@@ -133,8 +134,15 @@ Rewrites Markdown using the shared provider router and the requested provider/fa
 
 ### Validation
 
-`markdown` and `instruction` are checked manually for truthy values. This endpoint does not use a
-Zod schema and does not impose explicit field length limits.
+Zod requires `markdown` (1–500,000 characters) and `instruction` (1–10,000 characters).
+Optional `docType` uses the same document enum as generation and applies its audience, purpose and
+depth profile; older callers without it preserve the existing document's purpose. The editor sends
+the generated document type. Invalid document types return 400. Optional `repoUrl` reloads evidence.
+
+Generation and refinement keep tone separate from audience. Technical documentation omits generic
+legal placeholders and attorney-review footers; legal templates retain their review disclaimer.
+Machine-oriented generation omits the HTML provenance comment to preserve native syntax. Native
+format correctness remains a model responsibility, not a full schema validation guarantee.
 
 ### Provider behavior
 

@@ -6,15 +6,20 @@ active database, OAuth provider, or runtime from the presence of an installed de
 ## Evidence collection
 
 The backend resolves the default branch to a commit, reads that commit's file inventory, and
-fetches up to 12 relevant text blobs from the same snapshot. Priority goes to package scripts,
-README/license, deployment configuration, database dialect/schema, runtime entry point, auth,
-and representative routing files. It does not clone or execute the target project.
+fetches up to 12 relevant text blobs from the same snapshot. Selection includes package scripts,
+common React/application roots and up to two representative feature files, deployment configuration,
+database dialect/schema, runtime entry point, auth, and routing. Documentation and remaining config
+fill available slots. This is heuristic sampling, not complete import-graph analysis. It does not
+clone or execute the target project.
 
 Individual excerpts are bounded, with a 36,000-character total source budget. Truncation,
 unreadable files, and partial inventories are marked explicitly. Only environment *examples*
 are considered, and assignment values are redacted; real `.env` and private-key files are not
 selected. Snapshots are cached in process for five minutes, with at most 20 cached repositories.
 Configure `GITHUB_TOKEN` for higher GitHub rate limits or authorized private-repository access.
+The allocator reserves space for later readable files so large manifests or UI files cannot
+consume the whole budget before runtime evidence is included. Uninspected files are unknown,
+not evidence that those files or features do not exist.
 
 The generated document's provenance comment records the snapshot commit and evidence paths.
 This is a source inventory, not a claim that every sentence has been independently verified.
@@ -65,6 +70,21 @@ Style examples are not repository evidence: their features, technologies, comman
 contact details and licenses must never transfer into another project's document. Factual and
 legal constraints still outrank tone. This is prompt calibration, not a deterministic guarantee
 of humor quality; compare generated outputs with the intended voice during review.
+
+## Document readers and depth
+
+`server/documents.ts` supplies an explicit audience, purpose and depth profile for every supported
+document type. README targets a newcomer deciding whether and how to use the project; deployment,
+development and architecture address their respective technical readers. Legal templates prioritize
+clear rights, obligations and disclosures. Tone changes delivery, not the reader or document scope.
+Long documents and alternate drafts must stay within that scope instead of adding unrelated internals.
+
+Generation always applies the selected profile. Refinement accepts optional `docType`; the editor
+sends the generated document's type, while older callers without it preserve the draft's existing
+purpose. Ordinary technical documents omit generic attorney-review footers and legal placeholders.
+Legal templates retain the review disclaimer. Machine-oriented document types prioritize native
+syntax over humor and omit the HTML provenance prefix. These are writing instructions rather than
+an automated semantic validator for every generated document or machine format.
 
 ## Limits
 
