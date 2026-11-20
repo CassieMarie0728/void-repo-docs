@@ -21,12 +21,19 @@ export interface RepositoryContext {
 const cache = new Map<string, { expires: number; context: RepositoryContext }>();
 
 export function selectEvidencePaths(paths: string[]): string[] {
+  paths = paths.filter(path => !/(?:^|\/)(?:node_modules|vendor|dist|build|coverage|\.git|__tests__)(?:\/|$)|(?:\.test|\.spec)\.[cm]?[jt]sx?$/.test(path));
   const selected: string[] = [];
   const add = (path: string | undefined) => { if (path && !selected.includes(path)) selected.push(path); };
   const first = (names: string[]) => add(names.find(name => paths.includes(name)));
   first(['package.json', 'pyproject.toml', 'Cargo.toml', 'go.mod']);
-  add(paths.find(path => /^readme(?:\.md|\.rst|\.txt)?$/i.test(path)));
-  add(paths.find(path => /^(?:license|licence|copying)(?:\.md|\.txt)?$/i.test(path)));
+  // Reserve product evidence before documentation/config consume the bounded inventory.
+  first(['src/App.tsx', 'src/App.jsx', 'App.tsx', 'App.jsx', 'client/src/App.tsx', 'client/src/App.jsx', 'app/page.tsx', 'src/app/page.tsx', 'src/routes/+page.svelte']);
+  const features = paths.filter(path => /(?:^|\/)(?:components|pages|features|screens)\/.*\.(?:tsx|jsx|vue|svelte)$/.test(path));
+  const rankedFeatures = features.sort((a, b) => {
+    const rank = (path: string) => /(?:layout|skeleton|showcase|errorboundary)/i.test(path) || /(?:^|\/)ui\//.test(path) ? 3 : /(?:editor|snippet|workspace|bubble|posts)/i.test(path) ? 0 : /(?:dashboard|home)/i.test(path) ? 1 : 2;
+    return rank(a) - rank(b) || a.localeCompare(b);
+  });
+  rankedFeatures.slice(0, 2).forEach(add);
   first(['wrangler.jsonc', 'wrangler.json', 'wrangler.toml']);
   first(['drizzle.config.ts', 'drizzle.config.js', 'drizzle.config.mjs']);
   first(['server/worker.ts', 'src/worker.ts', 'src/index.ts', 'server/index.ts', 'server.ts', 'app.py', 'main.py', 'main.go', 'src/main.rs']);
@@ -35,7 +42,10 @@ export function selectEvidencePaths(paths: string[]): string[] {
   first(['server/db.ts', 'src/db/index.ts', 'server/database.ts']);
   first(['server/routers.ts', 'src/server/routers.ts', 'server/routes.ts', 'src/routes.ts']);
   first(['.env.example', '.env.sample']);
+  add(paths.find(path => /^readme(?:\.md|\.rst|\.txt)?$/i.test(path)));
+  add(paths.find(path => /^(?:license|licence|copying)(?:\.md|\.txt)?$/i.test(path)));
   first(['Dockerfile', 'render.yaml', 'netlify.toml', 'vercel.json', 'compose.yaml']);
+  first(['src/main.tsx', 'src/main.jsx', 'src/index.tsx', 'src/index.jsx', 'index.tsx', 'client/src/main.tsx', 'vite.config.ts', 'vite.config.js']);
   return selected.slice(0, 12);
 }
 
@@ -83,12 +93,14 @@ export async function fetchRepoInfo(owner: string, repo: string, dependencies: {
     let remaining = 36000;
     let packageJson: Record<string, any> | undefined;
     const sources: RepositorySource[] = [];
-    for (const source of loaded) {
-      if (!source) continue;
+    const readable = loaded.filter((source): source is RepositorySource => source !== null);
+    for (const [index, source] of readable.entries()) {
       if (source.path === 'package.json') {
         try { packageJson = JSON.parse(source.content); } catch { notes.push('package.json is not valid JSON; script names could not be verified.'); }
       }
-      const limit = Math.min(source.path === 'package.json' ? 12000 : 5000, remaining);
+      // Large manifests/UI files must not starve later runtime/config evidence.
+      const reserved = (readable.length - index - 1) * 1500;
+      const limit = Math.min(source.path === 'package.json' ? 12000 : 5000, Math.max(0, remaining - reserved));
       if (limit <= 0) { notes.push(`${source.path}: omitted because the total evidence budget was reached.`); continue; }
       sources.push({ ...source, content: source.content.slice(0, limit), truncated: source.content.length > limit });
       remaining -= Math.min(source.content.length, limit);
