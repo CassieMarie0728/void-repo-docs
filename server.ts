@@ -254,7 +254,7 @@ app.post("/api/generate", async (req, res) => {
     } else if (validated.length === Length.Medium) {
       lengthInstruction = "Write a comprehensive standard-length document (800 to 1200 words) with balanced, well-rounded sections.";
     } else if (validated.length === Length.Long) {
-      lengthInstruction = "Write a detailed, complete document of 1500 to 2500 words. Stay within 2500 words. Cover all relevant sections, legal protections, and practical explanations thoroughly within that budget. Use code blocks, tables, and FAQs only where relevant, and always finish every section and the final disclaimer. Avoid repetition and padding.";
+      lengthInstruction = "Write a detailed, complete document of 1500 to 2500 words. Stay within 2500 words. Cover the requested document's relevant sections and practical explanations thoroughly within that budget. Use code blocks, tables, and FAQs only where relevant, and always finish every section and the final disclaimer. Avoid repetition and padding.";
     }
 
     let toneInstructions = "";
@@ -331,7 +331,7 @@ ${platformInstructions}
 IMPORTANT RULES:
 1. Output ONLY the requested document/notice in its native format. For narrative documents use Markdown and start with the first header. Machine-readable documents must preserve their syntax without prose wrappers, jokes or footers.
 2. Do not invent unverifiable facts (addresses, company names, legal jurisdictions). Use placeholders like [Contact Email], [Company Name], [Jurisdiction], [Effective Date].
-3. Maintain the requested tone profile exhaustively throughout the entire text. It is a critical failure to drift back to standard corporate AI style.
+3. Apply the requested tone where appropriate. Audience, document purpose, native syntax, factual accuracy and legal clarity take priority over stylistic flourishes.
 4. Only legal templates need this final disclaimer: "Disclaimer: This document is a starting template and should be reviewed by a qualified attorney before use." Ordinary technical documentation does not need an attorney-review footer.
 5. PROJECT-CENTRIC GENERATION:
    - Generate all documents based on the actual application/software PROJECT itself (i.e., its features, business logic, system architecture, database design, target audience, and installation/operational footprint).
@@ -439,8 +439,8 @@ Your job is to rewrite, refine, or edit the user's provided markdown according t
 
 CRITICAL LAWS:
 1. Maintain the general context, document type, and legal integrity of the document.
-2. Return ONLY the refined raw markdown document itself.
-3. DO NOT wrap the markdown inside triple-backtick markdown blocks (\`\`\`markdown) since this goes directly into a markdown editor. Keep the output as pure, valid raw markdown text.
+2. Return ONLY the refined document in its requested native format.
+3. DO NOT wrap the markdown inside triple-backtick markdown blocks (\`\`\`markdown) since this goes directly into a markdown editor. For narrative documents return raw Markdown; machine-oriented documents retain their native syntax.
 4. Do NOT output introductory chatter, explanations, summaries ("Here is your refined document", "I have updated the clauses"), or conversational footnotes. Under no circumstances should you talk outside the document text itself.
 5. Preserve required legal disclaimers in legal templates. Omit irrelevant attorney-review footers from technical documentation; keep machine-readable output valid.
 ${GROUNDING_RULES}
