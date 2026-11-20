@@ -19,7 +19,7 @@ export function ServerConnection() {
       localStorage.setItem("void_server_url", origin);
       sessionStorage.setItem("void_server_token", token);
       setUrl(origin);
-      setMessage(`Connected to VOID. Model: ${response.data.model}. Model readiness is checked when you generate.`);
+      setMessage(`Connected to VOID. Server OpenRouter default: ${response.data.model}. Your Cognitive Engine selection controls the provider used. Readiness is checked when you generate.`);
     } catch (error) {
       setMessage(axios.isAxiosError(error) ? error.response?.data?.error || "Connection failed. Check the server address, network, and access token." : (error as Error).message);
     } finally { setBusy(false); }

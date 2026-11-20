@@ -4,6 +4,24 @@ The default deployment uses OpenRouter's `openrouter/free` router for generation
 one Render **Free** web service for the UI and Express backend, and GitHub Actions for Android
 debug APK builds. Your laptop runs neither model inference nor Android compilation.
 
+## Choose a provider and model
+
+In Setup, **Cognitive Engine** selects the provider. Adding a key in the Key Vault does not change
+that selection. To use only a Mistral or Groq key, select that provider explicitly; Auto starts at
+the self-hosted server and only tries cloud providers when cloud fallback is enabled.
+
+The optional **Model ID** field is saved separately for Mistral, Groq and OpenRouter, and is sent
+for both generation and refinement. Blank uses that provider's server default. Enter
+`openrouter/free` for automatic free routing or an exact `provider/model:free` ID to pin a free
+OpenRouter model. Paid OpenRouter request overrides are rejected. Mistral/Groq model access,
+billing and quotas depend on the provider account; their keys are not interchangeable.
+
+A pinned model does not automatically switch to another model or provider when unavailable.
+**Last used** beside the draft reports the actual provider and model returned. Provider errors
+now distinguish rejected keys, permissions, request/model settings, size, billing and rate limits
+without displaying private vendor payloads. Existing errors alone cannot establish which model
+or account limit caused an earlier failure; retry after selecting the intended provider.
+
 ## Deploy the web app
 
 1. Push this repository, including `render.yaml`, to GitHub.

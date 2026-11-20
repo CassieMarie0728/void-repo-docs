@@ -380,10 +380,11 @@ ${evidencePrompt(repoContext)}
 
         const processedMarkdown = insertBadges(markdown, validated);
         const provenance = `<!--\nEvidence snapshot: ${repoContext.revision || "manual inputs only"}\nEvidence files: ${(repoContext.sources || []).map((source: { path: string }) => source.path).join(", ")}\nDocument: ${validated.docType}\nRepository: ${validated.repoUrl}\nTone: ${validated.tone} | Length: ${validated.length}\nDraft Version: ${idx + 1} of ${versionCount}\nGenerated: ${new Date().toISOString()}\nProvider: ${activeProvider.toUpperCase()}${usedModel ? ` (${usedModel})` : ""}\n-->\n\n`;
-        return DOCUMENT_PROFILES[validated.docType].machine ? processedMarkdown : provenance + processedMarkdown;
+        return { markdown: DOCUMENT_PROFILES[validated.docType].machine ? processedMarkdown : provenance + processedMarkdown, provider: activeProvider, model: usedModel };
       });
 
-      const markdowns = await Promise.all(requests);
+      const generations = await Promise.all(requests);
+      const markdowns = generations.map(generation => generation.markdown);
 
       res.json({
         repo: validated.repoUrl,
@@ -392,7 +393,8 @@ ${evidencePrompt(repoContext)}
         tone: validated.tone,
         length: validated.length,
         markdown: markdowns[0],
-        markdowns: markdowns
+        markdowns: markdowns,
+        usedEngines: generations.map(({ provider, model }) => ({ provider, model }))
       });
 
     } catch (error: any) {
