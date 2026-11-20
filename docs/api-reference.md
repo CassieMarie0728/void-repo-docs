@@ -58,6 +58,7 @@ Generates one to five Markdown drafts.
 | `length` | enum | `short`, `medium`, or `long` |
 | `versionCount` | number | Integer-like value from 1 through 5 |
 | `provider` | enum | Default `openrouter`; also `auto`, `selfhosted`, `mistral`, or `groq` |
+| `model` | string | Optional exact cloud model ID, 1–200 characters; not a URL. Omit blank values. Auto/selfhosted reject overrides. OpenRouter overrides must be `openrouter/free` or end in `:free`. |
 | `allowCloudFallback` | boolean | Default false; permits cloud attempts in Auto mode |
 | `customKeys` | object | Optional per-request provider key overrides |
 | `targetPlatform` | enum | `github_repo`, `web_app`, or `android_app` |
@@ -117,6 +118,8 @@ draft number, generation timestamp, provider, and model.
 ## `POST /api/refine`
 
 Rewrites Markdown using the shared provider router and the requested provider/fallback settings.
+Both routes accept `model` with the same validation. A pinned model failure does not switch models
+or providers. Omit `model` to retain administrator-configured defaults.
 
 ### Request
 
@@ -166,6 +169,20 @@ format correctness remains a model responsibility, not a full schema validation 
 
 - `400` when Markdown or instruction is missing.
 - `400` for missing selected cloud configuration, `502` for provider failure.
+
+### Actual provider and model
+
+Refinement returns the actual `provider` and `model`. Generation returns `usedEngines`, an array
+of `{ provider, model }` in the same order as `markdowns`. The editor displays this metadata per
+draft and persists it with saved drafts, updating it after refinement.
+
+### Provider errors
+
+Sanitized errors name the attempted provider without vendor response text or credentials:
+401 for rejected keys, 403 for access denial, 400 for rejected request/model settings (including
+upstream 404), 413 for oversized requests, 402 for billing, 429 for rate limits and 502 for
+upstream/network failures. Auto summaries list attempted routes. Explicit cloud requests do not
+claim self-hosted failure or fallback attempts, even if the Auto fallback toggle is enabled.
 
 ## `POST /api/export-notion`
 

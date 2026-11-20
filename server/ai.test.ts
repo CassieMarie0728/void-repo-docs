@@ -114,3 +114,45 @@ test('OpenRouter failure does not switch to a paid provider even when fallback i
   }), /No paid fallback was attempted/);
   assert.equal(calls, 1);
 });
+
+test('explicit cloud model IDs override only that provider; Auto/local and paid OpenRouter overrides are rejected', () => {
+  for (const provider of ['mistral', 'groq', 'openrouter'] as const) {
+    const model = provider === 'openrouter' ? 'example/writer:free' : 'my-writer';
+    const engines = enginesFor({ provider, model, customKeys: { [provider]: ' key ' }, allowCloudFallback: true }, {});
+    assert.equal(engines.length, 1);
+    assert.equal(engines[0].provider, provider);
+    assert.equal(engines[0].model, model);
+    assert.equal(engines[0].key, 'key');
+  }
+  for (const provider of ['auto', 'selfhosted'] as const) assert.throws(() => enginesFor({ provider, model: 'override' }, {}), AIError);
+  assert.throws(() => enginesFor({ provider: 'openrouter', model: 'example/paid', customKeys: { openrouter: 'key' } }, {}), /ending in :free/);
+  assert.equal(routingSchema.safeParse({ model: 'https://untrusted.test/model' }).success, false);
+  assert.equal(routingSchema.parse({ model: ' example/writer:free ' }).model, 'example/writer:free');
+});
+
+test('Mistral/Groq failures describe the provider, not a local server or imaginary fallback', async () => {
+  for (const provider of ['mistral', 'groq'] as const) {
+    for (const [status, expected] of [[401, /API key/], [403, /permissions/], [400, /model or request settings/], [404, /model or request settings/], [413, /request size/], [429, /rate limit/], [500, /did not complete/]] as const) {
+      let calls = 0;
+      await assert.rejects(complete({ provider, model: 'my-model', customKeys: { [provider]: 'private-key' }, allowCloudFallback: true }, 'system', 'private draft', 0.5, {
+        env: {}, post: (async (url: string) => {
+          calls++; assert.ok(url.includes(provider));
+          throw { isAxiosError: true, response: { status, data: { error: { message: 'private-key private draft' } } } };
+        }) as any,
+      }), (error: AIError) => {
+        assert.match(error.message, new RegExp(provider, 'i'));
+        assert.match(error.message, expected);
+        assert.doesNotMatch(error.message, /AI_MODEL|fallback|private-key|private draft/);
+        assert.equal(error.status, status === 404 ? 400 : status === 500 ? 502 : status);
+        return true;
+      });
+      assert.equal(calls, 1);
+    }
+  }
+});
+
+test('failed Auto fallback lists only attempted providers without disclosing vendor text', async () => {
+  await assert.rejects(complete({ provider: 'auto', allowCloudFallback: true, customKeys: { mistral: 'key' } }, 'system', 'draft', 0.5, {
+    env: {}, post: (async () => { throw { isAxiosError: true, response: { status: 401 } }; }) as any,
+  }), (error: AIError) => /Auto attempts failed/.test(error.message) && /Self-hosted/.test(error.message) && /Mistral/.test(error.message) && !/Groq|OpenRouter/.test(error.message));
+});

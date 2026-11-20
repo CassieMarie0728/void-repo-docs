@@ -73,6 +73,29 @@ test('HTTP generation, refinement, authentication and validation', async () => {
     const machine = await post('/api/generate', { ...input, docType: DocumentType.Codeowners, versionCount: 1 });
     assert.equal(machine.status, 200);
     assert.ok(!(await machine.json()).markdown.startsWith('<!--'));
+    const previousPost = axios.post;
+    const cloudCalls: any[] = [];
+    try {
+      axios.post = (async (url: string, body: any) => {
+        cloudCalls.push({ url, body });
+        return { data: { model: 'actual-served-model', choices: [{ message: { content: '# Cloud draft' }, finish_reason: 'stop' }] } };
+      }) as typeof axios.post;
+      for (const provider of ['mistral', 'groq', 'openrouter']) {
+        const model = provider === 'openrouter' ? 'example/writer:free' : 'my-writer';
+        const generatedCloud = await post('/api/generate', { ...input, versionCount: 1, provider, model, customKeys: { [provider]: 'fixture-key' }, allowCloudFallback: true });
+        assert.equal(generatedCloud.status, 200);
+        const cloudDraft = await generatedCloud.json();
+        assert.deepEqual(cloudDraft.usedEngines, [{ provider, model: 'actual-served-model' }]);
+        const refinedCloud = await post('/api/refine', { markdown: cloudDraft.markdown, instruction: 'Edit', provider, model, customKeys: { [provider]: 'fixture-key' } });
+        assert.equal(refinedCloud.status, 200);
+        assert.equal((await refinedCloud.json()).model, 'actual-served-model');
+        assert.ok(cloudCalls.at(-1).url.includes(provider));
+        assert.equal(cloudCalls.at(-1).body.model, model);
+      }
+      assert.equal(cloudCalls.length, 6);
+      assert.equal((await post('/api/generate', { ...input, versionCount: 1, provider: 'openrouter', model: 'example/paid', customKeys: { openrouter: 'key' } })).status, 400);
+      assert.equal(cloudCalls.length, 6);
+    } finally { axios.post = previousPost; }
     assert.equal((await fetch(base + '/api/missing', { headers: { Authorization: 'Bearer test-access' } })).status, 404);
     const previousGet = axios.get;
     try {

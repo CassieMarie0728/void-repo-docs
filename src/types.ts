@@ -103,6 +103,7 @@ export interface GenRequest {
   length: Length;
   versionCount?: number;
   provider?: ProviderType;
+  model?: string;
   customKeys?: CustomApiKeys;
   allowCloudFallback?: boolean;
 
@@ -126,6 +127,7 @@ export interface GenRequest {
 }
 
 export interface GenResponse {
+  usedEngines?: { provider: string; model: string }[];
   repo: string;
   evidenceRepoUrl?: string;
   docType: string;

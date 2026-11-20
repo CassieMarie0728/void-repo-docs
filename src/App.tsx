@@ -215,6 +215,18 @@ const cleanMarkdownSpacing = (text: string): string => {
 export default function App() {
   const [repoUrl, setRepoUrl] = useState("");
   const [provider, setProvider] = useState<ProviderType>("openrouter");
+  const [modelIds, setModelIds] = useState<Record<string, string>>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("void_model_ids") || "{}");
+      return Object.fromEntries(["mistral", "groq", "openrouter"].map(name => [name, typeof stored?.[name] === "string" ? stored[name].slice(0, 200) : ""]));
+    } catch { return {}; }
+  });
+  useEffect(() => { localStorage.setItem("void_model_ids", JSON.stringify(modelIds)); }, [modelIds]);
+  const cloudSelected = ["mistral", "groq", "openrouter"].includes(provider);
+  const requestedModel = cloudSelected ? modelIds[provider]?.trim() || undefined : undefined;
+  const modelValidationError = provider === "openrouter" && requestedModel && requestedModel !== "openrouter/free" && !requestedModel.endsWith(":free")
+    ? "Use openrouter/free or a model ID ending in :free to keep OpenRouter free." : "";
+
   const [customKeys, setCustomKeys] = useState<{
     selfhosted: string;
     mistral: string;
@@ -352,6 +364,7 @@ export default function App() {
             tone: parsed.tone || Tone.Professional,
             length: parsed.length || Length.Medium,
             markdown: parsed.markdown,
+            usedEngines: parsed.usedEngines,
             markdowns: parsed.markdowns
           });
           
@@ -413,6 +426,7 @@ export default function App() {
           parsed && 
           parsed.markdown === editedMarkdown &&
           parsed.activeVersionIndex === activeVersionIndex &&
+          JSON.stringify(parsed.usedEngines) === JSON.stringify(result.usedEngines) &&
           JSON.stringify(parsed.markdowns) === JSON.stringify(versions)
         ) {
           needsSave = false;
@@ -430,6 +444,7 @@ export default function App() {
       localStorage.setItem("void_editor_draft", JSON.stringify({
         markdown: editedMarkdown,
         originalMarkdown,
+        usedEngines: result.usedEngines,
         docType: result.docType,
         evidenceRepoUrl: result.evidenceRepoUrl,
         repoUrl,
@@ -468,6 +483,7 @@ export default function App() {
   };
 
   const handleRefine = async (instruction: string) => {
+    if (modelValidationError) { toast.error(modelValidationError); return; }
     if (!editedMarkdown) {
       toast.error("Can't refine empty vacuum. Generate a document first.");
       return;
@@ -482,7 +498,7 @@ export default function App() {
     setIsRefining(true);
 
     try {
-      const response = await apiClient.post<{ markdown: string }>("/api/refine", {
+      const response = await apiClient.post<{ markdown: string; provider: string; model: string }>("/api/refine", {
         markdown: editedMarkdown,
         repoUrl: result?.evidenceRepoUrl ?? result?.repo ?? "",
         docType: result?.docType,
@@ -490,11 +506,18 @@ export default function App() {
         tone: tone,
         customKeys,
         provider,
+        model: requestedModel,
         allowCloudFallback,
       });
 
       if (response.data && response.data.markdown) {
         setEditedMarkdown(response.data.markdown);
+        setResult(previous => {
+          if (!previous) return previous;
+          const usedEngines = [...(previous.usedEngines || [])];
+          usedEngines[activeVersionIndex] = { provider: response.data.provider, model: response.data.model };
+          return { ...previous, usedEngines };
+        });
         toast.success("Document refined successfully.");
       } else {
         toast.error("AI returned an empty response. Shocking, I know.");
@@ -536,6 +559,7 @@ export default function App() {
   }, [repoUrl, docType, tone, length, targetPlatform, appName, appDescription, webUrl, analyticsAndTracking, authProvider, packageName, androidPermissions, monetizationServices]);
 
   const handleGenerate = async () => {
+    if (modelValidationError) { toast.error(modelValidationError); return; }
     const isGithubPlatform = targetPlatform === TargetPlatform.GithubRepo;
     if (isGithubPlatform && !repoUrl) {
       toast.error("Enter a repo URL, unless you want me to write documentation for your imaginary friends.");
@@ -567,6 +591,7 @@ export default function App() {
         length,
         versionCount,
         provider,
+        model: requestedModel,
         customKeys,
         allowCloudFallback,
         targetPlatform,
@@ -595,6 +620,7 @@ export default function App() {
       localStorage.setItem("void_editor_draft", JSON.stringify({
         markdown: resultsArray[0],
         originalMarkdown: resultsArray[0],
+        usedEngines: response.data.usedEngines,
         docType: response.data.docType,
         evidenceRepoUrl: response.data.evidenceRepoUrl,
         repoUrl,
@@ -938,6 +964,12 @@ ${htmlContent}
             </div>
           )}
 
+          {result?.usedEngines?.[activeVersionIndex] && (
+            <div className="border-b border-brand-border/40 px-6 py-2 text-xs font-mono text-brand-muted break-all" role="status">
+              Last used: {result.usedEngines[activeVersionIndex].provider} / {result.usedEngines[activeVersionIndex].model}
+            </div>
+          )}
+
           {/* Draft Variation Selector Tab Strip */}
           {result && versions && versions.length > 1 && (
             <div className="h-11 border-b border-brand-border/40 bg-black/20 flex items-center justify-between px-8 shrink-0 select-none">
@@ -1011,6 +1043,7 @@ ${htmlContent}
                         <div className="space-y-1">
                           <span className="text-[10px] uppercase font-bold text-brand-accent tracking-widest">Output Package</span>
                           <h3 className="serif-text text-2xl text-white italic">{result.docType}</h3>
+
                           <div className="flex items-center gap-4 text-[10px] font-mono text-brand-muted uppercase">
                             <span>words: <span className="text-brand-accent font-bold">{getWordCount(displayedMarkdown)}</span></span>
                             <span className="opacity-30">|</span>
@@ -1674,9 +1707,9 @@ ${htmlContent}
                             <SelectContent className="bg-brand-config border-brand-border text-brand-text font-mono">
                               <SelectItem value="auto" className="text-xs">Auto (self-hosted first)</SelectItem>
                               <SelectItem value="selfhosted" className="text-xs">Self-hosted model (your server)</SelectItem>
-                              <SelectItem value="mistral" className="text-xs">Mistral AI (mistral-large)</SelectItem>
+                              <SelectItem value="mistral" className="text-xs">Mistral AI</SelectItem>
                               <SelectItem value="openrouter" className="text-xs">OpenRouter Free (recommended)</SelectItem>
-                              <SelectItem value="groq" className="text-xs">Groq (llama-3.3-70b-versatile)</SelectItem>
+                              <SelectItem value="groq" className="text-xs">Groq</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1684,6 +1717,21 @@ ${htmlContent}
                           OpenRouter uses free models by default. Each draft or refinement uses a request. Auto is available for self-hosted setups.
                         </p>
                       </div>
+
+                      {cloudSelected && (
+                        <div className="space-y-2">
+                          <label htmlFor="provider-model-id" className="text-[10px] uppercase font-mono tracking-widest text-brand-muted">Model ID (optional)</label>
+                          <Input id="provider-model-id" value={modelIds[provider] || ""} maxLength={200}
+                            onChange={event => setModelIds(previous => ({ ...previous, [provider]: event.target.value }))}
+                            placeholder={provider === "openrouter" ? "openrouter/free or provider/model:free" : "Exact model ID from your provider"}
+                            aria-invalid={Boolean(modelValidationError)} aria-describedby="provider-model-help"
+                            className="h-10 bg-black/60 border-brand-border text-xs font-mono" />
+                          <p id="provider-model-help" className="text-xs text-brand-muted leading-relaxed">
+                            {modelValidationError || (provider === "openrouter" ? "Blank uses the server default. Enter openrouter/free for automatic free routing, or a specific :free model. No automatic model fallback." : "Blank uses the server's model default. Enter an exact model ID available to your account. This uses the selected provider only; provider billing and limits apply.")}
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-xs text-brand-muted leading-relaxed">Adding an API key does not switch engines. Select Mistral, Groq, or OpenRouter above to use that provider.</p>
 
                       <label className="flex items-start gap-3 text-xs text-brand-text leading-relaxed">
                         <input type="checkbox" checked={allowCloudFallback} onChange={e => setAllowCloudFallback(e.target.checked)} className="mt-1 accent-[#981518]" />
